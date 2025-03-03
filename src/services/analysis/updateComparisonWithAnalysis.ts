@@ -61,6 +61,9 @@ export const updateComparisonWithAnalysis = async (
       if (analysis) {
         console.log(`Found matching analysis for product: ${productName}`);
         
+        // Create a new specs object by merging existing specs (if any) with the feature ratings
+        const existingSpecs = product.specs && typeof product.specs === 'object' ? product.specs : {};
+        
         // Update product with analysis data
         const { error: updateError } = await supabase
           .from('products')
@@ -70,7 +73,7 @@ export const updateComparisonWithAnalysis = async (
             overview: analysis.overview || '',
             // Store featureRatings as a JSON object in the specs field
             specs: {
-              ...(product.specs || {}),  // Keep existing specs
+              ...existingSpecs,  // Only spread if it's an object
               featureRatings: analysis.featureRatings || {}
             }
           })
