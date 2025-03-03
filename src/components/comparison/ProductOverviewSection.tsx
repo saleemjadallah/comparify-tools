@@ -26,9 +26,10 @@ const ProductOverviewSection = ({ products }: ProductOverviewSectionProps) => {
               <ComparisonRating rating={product.rating} />
             </div>
             
-            {product.overview && (
+            {/* Use AI generated overview if available, otherwise use product description */}
+            {(product.overview || product.description) && (
               <div className="mb-4 text-sm text-muted-foreground">
-                {product.overview}
+                {product.overview || product.description}
               </div>
             )}
             

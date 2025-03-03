@@ -33,6 +33,8 @@ export const analyzeProducts = async (
       brand: product.brand || 'Unknown',
       price: product.price || 'Unknown',
       specs: product.specs || product.details?.specs || {},
+      description: product.description || '',
+      rich_product_description: product.rich_product_description || [],
       // Include complete raw data for Claude to have maximum context
       rawData: product
     }));

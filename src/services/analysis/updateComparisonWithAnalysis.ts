@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { AnalysisResponse, FeatureRating } from "./types";
 import { Json } from "@/integrations/supabase/types";
@@ -25,7 +24,7 @@ export const updateComparisonWithAnalysis = async (
         comparison_id,
         product_id,
         position,
-        products(id, name, specs)
+        products(id, name, specs, description, rich_product_description)
       `)
       .eq('comparison_id', comparisonId);
 
@@ -86,6 +85,9 @@ export const updateComparisonWithAnalysis = async (
           pros: analysis.pros || [],
           cons: analysis.cons || [],
           overview: analysis.overview || '',
+          // Keep the existing description and rich_product_description
+          description: product.description || '',
+          rich_product_description: product.rich_product_description || [],
           // Store featureRatings as a JSON object in the specs field
           specs: {
             ...existingSpecs,

@@ -34,6 +34,8 @@ export const searchProductsFromRainforest = async (
     // Log a sample result to see what data we're getting
     if (data.results.length > 0) {
       console.log('Sample result specs:', data.results[0].specs);
+      console.log('Sample result description:', data.results[0].description);
+      console.log('Sample rich product description:', data.results[0].rich_product_description);
     }
 
     return data.results as ProductSearchResult[];

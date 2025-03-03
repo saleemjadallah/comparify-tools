@@ -60,10 +60,11 @@ Deno.serve(async (req) => {
       type: 'search',
       amazon_domain: 'amazon.com',
       search_term: `${searchQuery} ${categoryName}`,
-      include_summarization_attributes: 'true' // Add this parameter to get more detailed product info
+      include_summarization_attributes: 'true', // Add this parameter to get more detailed product info
+      include_all_full_description: 'true'      // Add this to get the full product description
     })
 
-    console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName} with summarization attributes`)
+    console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName} with summarization attributes and descriptions`)
     
     // Make the request to Rainforest API
     const response = await fetch(`${apiUrl}?${params.toString()}`)
@@ -88,6 +89,8 @@ Deno.serve(async (req) => {
       imageUrl: item.image || '',
       source: 'rainforest',
       source_id: item.asin || '',
+      description: item.description || '',
+      rich_product_description: extractRichProductDescription(item)
     }))
 
     // Return the transformed results
@@ -104,6 +107,29 @@ Deno.serve(async (req) => {
     })
   }
 })
+
+// Helper function to extract rich product description from Rainforest data
+function extractRichProductDescription(item: any): string[] {
+  const richDescriptions: string[] = []
+  
+  // Extract from features list
+  if (item.features && Array.isArray(item.features)) {
+    richDescriptions.push(...item.features)
+  }
+  
+  // Extract from full_description if it exists
+  if (item.full_description && typeof item.full_description === 'string') {
+    // Split by paragraphs or bullet points
+    const parts = item.full_description
+      .split(/\n+|•/)
+      .map((part: string) => part.trim())
+      .filter((part: string) => part.length > 0)
+    
+    richDescriptions.push(...parts)
+  }
+  
+  return richDescriptions
+}
 
 // Helper function to transform Rainforest product specs
 function transformRainforestSpecs(item: any): Record<string, string> {
