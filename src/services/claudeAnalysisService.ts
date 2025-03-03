@@ -1,9 +1,4 @@
 
 // Re-export analysis services for backward compatibility
-export {
-  AnalysisResponse,
-  ProductAnalysis,
-  FeatureRating,
-  analyzeProducts,
-  updateComparisonWithAnalysis
-} from './analysis';
+export type { AnalysisResponse, ProductAnalysis, FeatureRating } from './analysis';
+export { analyzeProducts, updateComparisonWithAnalysis } from './analysis';
