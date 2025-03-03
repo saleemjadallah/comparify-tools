@@ -105,6 +105,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          overview: string | null
           price: number | null
           pros: string[] | null
           rating: number | null
@@ -122,6 +123,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          overview?: string | null
           price?: number | null
           pros?: string[] | null
           rating?: number | null
@@ -139,6 +141,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          overview?: string | null
           price?: number | null
           pros?: string[] | null
           rating?: number | null

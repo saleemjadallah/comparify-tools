@@ -24,7 +24,7 @@ export const updateComparisonWithAnalysis = async (
         comparison_id,
         product_id,
         position,
-        products(id, name)
+        products(id, name, specs)
       `)
       .eq('comparison_id', comparisonId);
 
@@ -70,7 +70,7 @@ export const updateComparisonWithAnalysis = async (
             overview: analysis.overview || '',
             // Store featureRatings as a JSON object in the specs field
             specs: {
-              ...(cpItem.products.specs || {}),  // Keep existing specs
+              ...(product.specs || {}),  // Keep existing specs
               featureRatings: analysis.featureRatings || {}
             }
           })
