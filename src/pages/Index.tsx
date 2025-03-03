@@ -3,6 +3,7 @@ import { useRef } from "react";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
 import HowItWorks from "@/components/home/HowItWorks";
+import PricingSection from "@/components/home/PricingSection";
 import CTASection from "@/components/home/CTASection";
 
 const Index = () => {
@@ -24,6 +25,9 @@ const Index = () => {
       
       {/* How It Works Section */}
       <HowItWorks />
+      
+      {/* Pricing Section */}
+      <PricingSection />
       
       {/* CTA Section */}
       <CTASection />
