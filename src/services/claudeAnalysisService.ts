@@ -102,15 +102,21 @@ export const updateComparisonWithAnalysis = async (
       `)
       .eq('comparison_id', comparisonId);
 
-    if (fetchError || !comparisonProducts) {
+    if (fetchError) {
       console.error('Error fetching comparison products:', fetchError);
+      return false;
+    }
+
+    if (!comparisonProducts || comparisonProducts.length === 0) {
+      console.error('No comparison products found for this comparison');
       return false;
     }
 
     // Map Claude analysis to database products
     for (const cpItem of comparisonProducts) {
-      if (cpItem.products) {
-        const productName = cpItem.products.name;
+      const product = cpItem.products;
+      if (product) {
+        const productName = product.name;
         
         // Find matching analysis from Claude
         const analysis = analysisData.products.find(p => 
