@@ -10,6 +10,12 @@ interface ComparisonHeaderProps {
   comparisonId: string;
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 15) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ComparisonHeader = ({ category, products, comparisonId }: ComparisonHeaderProps) => {
   const handleShare = () => {
     // In a real app, you would generate a shareable link
@@ -30,7 +36,7 @@ const ComparisonHeader = ({ category, products, comparisonId }: ComparisonHeader
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
       <div>
         <h1 className="text-3xl font-bold">
-          {products.map(p => p.name).join(" vs ")}
+          {products.map(p => truncateText(p.name)).join(" vs ")}
         </h1>
         <p className="text-muted-foreground mt-1">
           {category} Comparison

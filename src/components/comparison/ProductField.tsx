@@ -36,6 +36,12 @@ interface ProductFieldProps {
   canRemove: boolean;
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 30) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ProductField = ({
   product,
   index,

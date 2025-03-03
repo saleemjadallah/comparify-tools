@@ -8,6 +8,12 @@ interface ProductSearchResultProps {
   onClick: () => void;
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 40) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ProductSearchResult = ({ product, onClick }: ProductSearchResultProps) => {
   return (
     <div
@@ -16,7 +22,7 @@ const ProductSearchResult = ({ product, onClick }: ProductSearchResultProps) => 
     >
       <div className="flex justify-between items-start">
         <div>
-          <div className="font-medium text-foreground">{product.name}</div>
+          <div className="font-medium text-foreground">{truncateText(product.name)}</div>
           <div className="text-sm text-muted-foreground">{product.brand}</div>
         </div>
         <div className="text-sm font-medium">${product.price}</div>
