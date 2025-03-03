@@ -47,7 +47,7 @@ const Layout = () => {
               to="/compare" 
               className={cn(
                 "flex items-center rounded-full px-4 py-2 text-sm font-medium transition-all-200",
-                "bg-black text-white hover:bg-black/90"
+                "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90"
               )}
             >
               Start Comparing <ChevronRight className="ml-1 h-4 w-4" />
