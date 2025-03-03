@@ -32,8 +32,13 @@ export const analyzeProducts = async (
       name: product.name,
       brand: product.brand || 'Unknown',
       price: product.price || 'Unknown',
-      specs: product.specs || product.details?.specs || {}
+      specs: product.specs || product.details?.specs || {},
+      // Include complete raw data for Claude to have maximum context
+      rawData: product
     }));
+
+    // Detailed logging of product data we're sending to Claude
+    console.log('Product data for analysis:', JSON.stringify(productData, null, 2));
 
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('claude-product-analysis', {

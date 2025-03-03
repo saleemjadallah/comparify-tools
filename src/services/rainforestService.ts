@@ -10,6 +10,8 @@ export const searchProductsFromRainforest = async (
   if (!query || query.length < 2 || !categoryName) return [];
 
   try {
+    console.log(`Searching Rainforest for "${query}" in category "${categoryName}"`);
+    
     const { data, error } = await supabase.functions.invoke('rainforest-api', {
       body: {
         searchQuery: query,
@@ -25,6 +27,13 @@ export const searchProductsFromRainforest = async (
     if (!data || !data.results) {
       console.warn('No results from Rainforest API');
       return [];
+    }
+
+    console.log(`Received ${data.results.length} results from Rainforest API`);
+    
+    // Log a sample result to see what data we're getting
+    if (data.results.length > 0) {
+      console.log('Sample result specs:', data.results[0].specs);
     }
 
     return data.results as ProductSearchResult[];

@@ -60,9 +60,10 @@ Deno.serve(async (req) => {
       type: 'search',
       amazon_domain: 'amazon.com',
       search_term: `${searchQuery} ${categoryName}`,
+      include_summarization_attributes: 'true' // Add this parameter to get more detailed product info
     })
 
-    console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName}`)
+    console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName} with summarization attributes`)
     
     // Make the request to Rainforest API
     const response = await fetch(`${apiUrl}?${params.toString()}`)
@@ -114,6 +115,15 @@ function transformRainforestSpecs(item: any): Record<string, string> {
   if (item.ratings_total) specs['Total Reviews'] = item.ratings_total.toString()
   if (item.is_prime) specs['Prime'] = item.is_prime ? 'Yes' : 'No'
   if (item.delivery?.is_free) specs['Free Delivery'] = item.delivery.is_free ? 'Yes' : 'No'
+  
+  // Add summarization attributes if available
+  if (item.summarization_attributes && Array.isArray(item.summarization_attributes)) {
+    item.summarization_attributes.forEach((attr: any) => {
+      if (attr.name && attr.value) {
+        specs[attr.name] = attr.value;
+      }
+    });
+  }
   
   // Add any additional specifications from the features array
   if (item.features && Array.isArray(item.features)) {
