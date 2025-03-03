@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -214,6 +213,7 @@ export function useComparisonBuilder() {
     products,
     featureImportance,
     currentStep,
+    setCurrentStep,
     isGenerating,
     addProduct,
     removeProduct,

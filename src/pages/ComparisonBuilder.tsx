@@ -12,6 +12,7 @@ const ComparisonBuilder = () => {
     products,
     featureImportance,
     currentStep,
+    setCurrentStep, // Add this missing function
     isGenerating,
     addProduct,
     removeProduct,
