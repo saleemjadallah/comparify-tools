@@ -5,7 +5,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { 
   ArrowLeft, 
   CircleCheck, 
-  CircleX 
+  CircleX,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ComparisonTable from "@/components/comparison/ComparisonTable";
@@ -59,7 +60,14 @@ const ComparisonPage = () => {
     return product && 
            ((product.pros && product.pros.length > 0) || 
             (product.cons && product.cons.length > 0) || 
-            (product.feature_ratings && Object.keys(product.feature_ratings).length > 0));
+            (product.specs?.featureRatings && Object.keys(product.specs.featureRatings).length > 0) ||
+            product.overview);
+  };
+
+  // Helper function to check if ANY products have analysis data
+  const hasAnyAnalysisData = () => {
+    if (!comparisonData || !comparisonData.products) return false;
+    return comparisonData.products.some(hasAnalysisData);
   };
 
   if (loading) {
@@ -105,20 +113,25 @@ const ComparisonPage = () => {
         </div>
 
         {/* Analysis Status */}
-        {!comparisonData.products.some(hasAnalysisData) && (
+        {!hasAnyAnalysisData() && (
           <div className="mb-8 bg-amber-50 border border-amber-200 p-4 rounded-lg">
-            <h3 className="font-medium text-amber-800">AI Analysis Unavailable</h3>
-            <p className="text-amber-700">
-              The AI analysis for these products is currently unavailable. This could be due to:
-            </p>
-            <ul className="list-disc ml-6 mt-2 text-amber-700">
-              <li>The AI service being temporarily unavailable</li>
-              <li>Insufficient product data for analysis</li>
-              <li>Product information not being recognized by the AI</li>
-            </ul>
-            <p className="mt-2 text-amber-700">
-              We're showing default comparison information instead.
-            </p>
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 mt-0.5 shrink-0" />
+              <div>
+                <h3 className="font-medium text-amber-800">AI Analysis Unavailable</h3>
+                <p className="text-amber-700">
+                  The AI analysis for these products is currently unavailable. This could be due to:
+                </p>
+                <ul className="list-disc ml-6 mt-2 text-amber-700">
+                  <li>Database column structure not matching the AI response format</li>
+                  <li>Insufficient product data for analysis</li>
+                  <li>Product information not being recognized by the AI</li>
+                </ul>
+                <p className="mt-2 text-amber-700">
+                  We're showing default comparison information instead.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -145,6 +158,12 @@ const ComparisonPage = () => {
                 <div className="flex items-center mb-4">
                   <ComparisonRating rating={product.rating} />
                 </div>
+                
+                {product.overview && (
+                  <div className="mb-4 text-sm text-muted-foreground">
+                    {product.overview}
+                  </div>
+                )}
                 
                 <div className="space-y-4">
                   <div>

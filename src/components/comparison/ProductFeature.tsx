@@ -15,8 +15,8 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x">
         {products.map((product) => {
-          // Check if we have AI-generated feature ratings
-          const featureRatings = product.feature_ratings || {};
+          // Check if we have AI-generated feature ratings from specs.featureRatings
+          const featureRatings = product.specs?.featureRatings || {};
           
           // Try to get the rating for this specific feature
           // Note: the feature key in the DB might be formatted differently than the UI
@@ -26,44 +26,64 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
           
           // Fallback data for development/testing
           const mockFeatureData: Record<string, Record<string, { rating: number; description: string }>> = {
-            "Camera Quality": {
+            "Performance": {
               "iPhone 14 Pro": { 
                 rating: 9, 
-                description: "Exceptional camera system with excellent low-light performance and video stabilization. The 48MP main camera delivers incredible detail."
+                description: "Exceptional performance with the A16 Bionic chip. Handles all tasks with ease."
               },
               "Samsung Galaxy S23": { 
                 rating: 8, 
-                description: "Very good camera performance with versatile lenses. Great color reproduction and impressive zoom capabilities."
+                description: "Fast and responsive with the Snapdragon 8 Gen 2 processor."
               }
             },
             "Battery Life": {
               "iPhone 14 Pro": { 
                 rating: 7, 
-                description: "Decent battery life that will get most users through a full day of moderate use, but heavy users may need to recharge before the day ends."
+                description: "Decent battery life that will get most users through a full day of moderate use."
               },
               "Samsung Galaxy S23": { 
                 rating: 8, 
-                description: "Good battery life with improved efficiency. Easily lasts a full day with moderate to heavy use."
+                description: "Good battery life with improved efficiency. Easily lasts a full day."
               }
             },
-            "Performance": {
+            "Display Quality": {
               "iPhone 14 Pro": { 
                 rating: 9, 
-                description: "Industry-leading performance with the A16 Bionic chip. Handles all tasks with ease and provides a smooth experience."
+                description: "Stunning display with excellent brightness and color accuracy."
               },
               "Samsung Galaxy S23": { 
-                rating: 8, 
-                description: "Fast and responsive with the Snapdragon 8 Gen 2 processor. Great gaming performance and multitasking capabilities."
+                rating: 9, 
+                description: "Beautiful AMOLED display with vibrant colors and deep blacks."
               }
             },
-            "Value for Money": {
+            "Storage": {
               "iPhone 14 Pro": { 
-                rating: 7, 
-                description: "Premium pricing that reflects the high-end features and build quality, but less competitive than some alternatives."
+                rating: 8, 
+                description: "Comes with ample storage options but no expandable storage."
+              },
+              "Samsung Galaxy S23": { 
+                rating: 9, 
+                description: "Good internal storage options plus microSD card support for expansion."
+              }
+            },
+            "Design": {
+              "iPhone 14 Pro": { 
+                rating: 8, 
+                description: "Premium build quality with elegant design and excellent materials."
               },
               "Samsung Galaxy S23": { 
                 rating: 8, 
-                description: "Good value proposition with a balance of high-end features at a slightly lower price point than some competitors."
+                description: "Sleek design with premium materials and good ergonomics."
+              }
+            },
+            "Warranty": {
+              "iPhone 14 Pro": { 
+                rating: 7, 
+                description: "Standard 1-year warranty with optional AppleCare+ for extended coverage."
+              },
+              "Samsung Galaxy S23": { 
+                rating: 7, 
+                description: "Standard manufacturer warranty with optional Samsung Care+ available."
               }
             }
           };
