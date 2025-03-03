@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { mockProductDatabase } from "@/data/products";
 import { ProductSearchResult, Product } from "./types";
+import { searchProductsFromRainforest } from "./rainforestService";
 
 // Function to search products from internal database
 export const searchProductsFromDatabase = async (
@@ -78,7 +79,7 @@ export const searchProductsFromMock = (
   }));
 };
 
-// Main search function that combines database and mock data
+// Main search function that combines database, rainforest, and mock data
 export const searchProducts = async (
   query: string,
   categoryName: string
@@ -89,16 +90,21 @@ export const searchProducts = async (
     // First, try to get results from the database
     const dbResults = await searchProductsFromDatabase(query, categoryName);
     
-    // If we have enough results from the database, return them
-    if (dbResults.length >= 3) {
-      return dbResults;
+    // Then, try to get results from Rainforest API
+    const rainforestResults = await searchProductsFromRainforest(query, categoryName);
+    
+    // Combine results from both sources
+    let combinedResults = [...dbResults, ...rainforestResults];
+    
+    // If we have enough results, return them
+    if (combinedResults.length >= 3) {
+      return combinedResults;
     }
     
     // Otherwise, supplement with mock data
     const mockResults = searchProductsFromMock(query, categoryName);
     
-    // Combine results, removing duplicates by name
-    const combinedResults = [...dbResults];
+    // Add mock results, removing duplicates by name
     for (const mockResult of mockResults) {
       if (!combinedResults.some(r => r.name.toLowerCase() === mockResult.name.toLowerCase())) {
         combinedResults.push(mockResult);
@@ -108,7 +114,7 @@ export const searchProducts = async (
     return combinedResults;
   } catch (error) {
     console.error('Error in searchProducts:', error);
-    // Fallback to mock data if database search fails
+    // Fallback to mock data if everything else fails
     return searchProductsFromMock(query, categoryName);
   }
 };

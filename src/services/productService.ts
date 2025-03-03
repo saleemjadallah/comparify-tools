@@ -3,6 +3,6 @@
 // for backward compatibility
 
 export type { ProductSearchResult } from './types';
-export { searchProducts, searchProductsFromDatabase, searchProductsFromMock } from './productSearchService';
+export { searchProducts, searchProductsFromDatabase, searchProductsFromMock, searchProductsFromRainforest } from './productSearchService';
 export { saveProduct } from './productManagementService';
 export { saveComparison, getComparison } from './comparisonService';
