@@ -18,6 +18,7 @@ const ComparisonBuilder = () => {
   ]);
   const [featureImportance, setFeatureImportance] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Steps for the comparison builder
   const steps = ["Category", "Products", "Features"];
@@ -81,7 +82,7 @@ const ComparisonBuilder = () => {
   };
 
   // Navigate to next step
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep === 0 && !category) {
       toast({
         title: "Please select a category",
@@ -103,9 +104,26 @@ const ComparisonBuilder = () => {
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Generate comparison ID and navigate
-      const comparisonId = crypto.randomUUID().slice(0, 8);
-      navigate(`/compare/${comparisonId}`);
+      // Set loading state
+      setIsGenerating(true);
+      
+      try {
+        // Simulate API call or processing time
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Generate comparison ID and navigate
+        const comparisonId = crypto.randomUUID().slice(0, 8);
+        navigate(`/compare/${comparisonId}`);
+      } catch (error) {
+        console.error("Error generating comparison:", error);
+        toast({
+          title: "Error",
+          description: "There was a problem generating your comparison. Please try again.",
+          variant: "destructive",
+        });
+        // Reset loading state if there's an error
+        setIsGenerating(false);
+      }
     }
   };
 
@@ -165,6 +183,7 @@ const ComparisonBuilder = () => {
               totalSteps={steps.length}
               nextStep={nextStep}
               prevStep={prevStep}
+              isLoading={isGenerating}
             />
           </div>
         </div>
