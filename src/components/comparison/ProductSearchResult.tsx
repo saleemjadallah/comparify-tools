@@ -33,9 +33,7 @@ const ProductSearchResult = ({ product, onClick }: ProductSearchResultProps) => 
       
       {product.rating && (
         <div className="mt-1">
-          <Compari
-
-sonRating rating={product.rating} size="sm" />
+          <ComparisonRating rating={product.rating} size="sm" />
         </div>
       )}
       

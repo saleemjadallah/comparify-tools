@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { AnalysisResponse, FeatureRating } from "./types";
 import { Json } from "@/integrations/supabase/types";
@@ -24,7 +25,7 @@ export const updateComparisonWithAnalysis = async (
         comparison_id,
         product_id,
         position,
-        products(id, name, specs, description, rich_product_description)
+        products(id, name, specs, description)
       `)
       .eq('comparison_id', comparisonId);
 
@@ -81,19 +82,31 @@ export const updateComparisonWithAnalysis = async (
         }
         
         // Prepare update data - ensuring it's all JSON-compatible
-        const updateData = {
+        const updateData: any = {
           pros: analysis.pros || [],
           cons: analysis.cons || [],
           overview: analysis.overview || '',
           // Keep the existing description and rich_product_description
           description: product.description || '',
-          rich_product_description: product.rich_product_description || [],
           // Store featureRatings as a JSON object in the specs field
           specs: {
             ...existingSpecs,
             featureRatings: featureRatingsJson
           }
         };
+        
+        // Check if rich_product_description column exists in the database
+        // by trying to select it - if it fails, we won't include it in the update
+        const { data: testData, error: testError } = await supabase
+          .from('products')
+          .select('rich_product_description')
+          .eq('id', cpItem.product_id)
+          .limit(1);
+          
+        // Only add rich_product_description to updateData if the column exists
+        if (!testError) {
+          updateData.rich_product_description = [];
+        }
         
         // Update product with analysis data
         const { error: updateError } = await supabase
