@@ -118,3 +118,6 @@ export const searchProducts = async (
     return searchProductsFromMock(query, categoryName);
   }
 };
+
+// Re-export the rainforest search function from rainforestService
+export { searchProductsFromRainforest } from "./rainforestService";
