@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, X, ArrowRight, ChevronsUpDown } from "lucide-react";
+import { Plus, X, ArrowRight, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,16 +29,41 @@ const productCategories = [
   "Tablets",
 ];
 
+// Mock product database for search functionality
+const mockProductDatabase = {
+  "Smartphones": [
+    { id: "s1", name: "iPhone 14 Pro", brand: "Apple", price: 999 },
+    { id: "s2", name: "Samsung Galaxy S23", brand: "Samsung", price: 799 },
+    { id: "s3", name: "Google Pixel 7", brand: "Google", price: 599 },
+    { id: "s4", name: "OnePlus 11", brand: "OnePlus", price: 699 },
+  ],
+  "Laptops": [
+    { id: "l1", name: "MacBook Pro 14\"", brand: "Apple", price: 1999 },
+    { id: "l2", name: "Dell XPS 13", brand: "Dell", price: 1299 },
+    { id: "l3", name: "Lenovo ThinkPad X1", brand: "Lenovo", price: 1499 },
+    { id: "l4", name: "HP Spectre x360", brand: "HP", price: 1399 },
+  ],
+  "Headphones": [
+    { id: "h1", name: "AirPods Pro", brand: "Apple", price: 249 },
+    { id: "h2", name: "Sony WH-1000XM5", brand: "Sony", price: 399 },
+    { id: "h3", name: "Bose QuietComfort", brand: "Bose", price: 329 },
+    { id: "h4", name: "Sennheiser Momentum 4", brand: "Sennheiser", price: 349 },
+  ],
+};
+
 const ComparisonBuilder = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [category, setCategory] = useState("");
-  const [products, setProducts] = useState<Array<{ name: string; id: string }>>([
+  const [products, setProducts] = useState<Array<{ name: string; id: string; details?: any }>>([
     { name: "", id: "1" },
     { name: "", id: "2" },
   ]);
   const [featureImportance, setFeatureImportance] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   // Add a new product
   const addProduct = () => {
@@ -75,6 +100,41 @@ const ComparisonBuilder = () => {
         product.id === id ? { ...product, name } : product
       )
     );
+  };
+
+  // Handle product search
+  const handleSearch = (query: string, productIndex: number) => {
+    setSearchQuery(query);
+    
+    if (query.length < 2 || !category) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Filter products based on the query and selected category
+    const categoryProducts = mockProductDatabase[category as keyof typeof mockProductDatabase] || [];
+    const results = categoryProducts.filter(product => 
+      product.name.toLowerCase().includes(query.toLowerCase()) ||
+      product.brand.toLowerCase().includes(query.toLowerCase())
+    );
+
+    setSearchResults(results);
+    setShowSearchResults(results.length > 0);
+  };
+
+  // Select product from search results
+  const selectProduct = (product: any, productIndex: number) => {
+    const updatedProducts = [...products];
+    updatedProducts[productIndex] = {
+      id: updatedProducts[productIndex].id,
+      name: product.name,
+      details: product
+    };
+    
+    setProducts(updatedProducts);
+    setShowSearchResults(false);
+    setSearchQuery("");
   };
 
   // Toggle feature importance
@@ -215,29 +275,68 @@ const ComparisonBuilder = () => {
 
                 <div className="space-y-4">
                   {products.map((product, index) => (
-                    <div key={product.id} className="flex items-center space-x-2">
-                      <div className="flex-grow">
-                        <Label htmlFor={`product-${index}`} className="sr-only">
-                          Product {index + 1}
-                        </Label>
-                        <Input
-                          id={`product-${index}`}
-                          placeholder={`Product ${index + 1} name or model`}
-                          value={product.name}
-                          onChange={(e) => updateProductName(product.id, e.target.value)}
-                          className="w-full"
-                        />
+                    <div key={product.id} className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-grow relative">
+                          <Label htmlFor={`product-${index}`} className="sr-only">
+                            Product {index + 1}
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id={`product-${index}`}
+                              placeholder={`Product ${index + 1} name or model`}
+                              value={product.name}
+                              onChange={(e) => {
+                                updateProductName(product.id, e.target.value);
+                                handleSearch(e.target.value, index);
+                              }}
+                              className="w-full pr-10"
+                            />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              <Search className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                          
+                          {/* Search Results Dropdown */}
+                          {showSearchResults && index === products.findIndex(p => !p.name || p.name === searchQuery) && (
+                            <div className="absolute w-full mt-1 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-auto">
+                              {searchResults.map((result) => (
+                                <div
+                                  key={result.id}
+                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                                  onClick={() => selectProduct(result, index)}
+                                >
+                                  <div>
+                                    <div className="font-medium">{result.name}</div>
+                                    <div className="text-sm text-muted-foreground">{result.brand}</div>
+                                  </div>
+                                  <div className="text-sm font-medium">${result.price}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeProduct(product.id)}
+                          disabled={products.length <= 2}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove product</span>
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeProduct(product.id)}
-                        disabled={products.length <= 2}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Remove product</span>
-                      </Button>
+                      
+                      {/* Product Details (if selected from search) */}
+                      {product.details && (
+                        <div className="ml-2 pl-3 border-l-2 border-primary/20 text-sm">
+                          <div className="text-muted-foreground">
+                            <span className="font-medium text-foreground">{product.details.brand}</span>
+                            {' • '}${product.details.price}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
 
