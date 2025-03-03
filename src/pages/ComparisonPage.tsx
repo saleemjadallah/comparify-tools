@@ -6,7 +6,8 @@ import {
   ArrowLeft, 
   CircleCheck, 
   CircleX,
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ComparisonTable from "@/components/comparison/ComparisonTable";
@@ -120,16 +121,25 @@ const ComparisonPage = () => {
               <div>
                 <h3 className="font-medium text-amber-800">AI Analysis Unavailable</h3>
                 <p className="text-amber-700">
-                  The AI analysis for these products is currently unavailable. This could be due to:
+                  The AI analysis for these products could not be completed. This could be due to:
                 </p>
                 <ul className="list-disc ml-6 mt-2 text-amber-700">
-                  <li>Database column structure not matching the AI response format</li>
-                  <li>Insufficient product data for analysis</li>
-                  <li>Product information not being recognized by the AI</li>
+                  <li>The AI service is currently unavailable or overloaded</li>
+                  <li>Insufficient product data for meaningful analysis</li>
+                  <li>Product specifications aren't in a format the AI can process</li>
                 </ul>
-                <p className="mt-2 text-amber-700">
-                  We're showing default comparison information instead.
-                </p>
+                <div className="mt-4 flex items-center">
+                  <Button 
+                    variant="outline" 
+                    className="text-amber-700 border-amber-300 hover:bg-amber-100"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry Analysis
+                  </Button>
+                  <p className="ml-4 text-amber-700 text-sm">
+                    For now, we're showing standard product information instead.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

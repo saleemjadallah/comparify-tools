@@ -46,9 +46,26 @@ export const analyzeProducts = async (
 
     if (error) {
       console.error('Error calling Claude analysis function:', error);
+      // More detailed error message
+      let errorMessage = "Could not analyze products.";
+      if (error.message.includes("non-2xx status code")) {
+        errorMessage += " The AI service is currently unavailable or overloaded. Your comparison will be created without AI analysis.";
+      }
+      
       toast({
-        title: "Analysis Failed",
-        description: "Could not analyze products. Please try again later.",
+        title: "Analysis Unavailable",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Check if we received empty or invalid data
+    if (!data) {
+      console.error('Empty response from Claude analysis function');
+      toast({
+        title: "Analysis Unavailable",
+        description: "Received empty response from the AI service. Your comparison will be created without AI analysis.",
         variant: "destructive",
       });
       return null;
@@ -62,8 +79,8 @@ export const analyzeProducts = async (
     if (!analysisData || !analysisData.products || analysisData.products.length === 0) {
       console.error('Invalid response from Claude analysis function:', data);
       toast({
-        title: "Analysis Failed",
-        description: "Received invalid response from the AI service.",
+        title: "Analysis Unavailable",
+        description: "Received invalid response from the AI service. Your comparison will be created without AI analysis.",
         variant: "destructive",
       });
       return null;
@@ -98,8 +115,8 @@ export const analyzeProducts = async (
   } catch (error) {
     console.error('Error in analyzeProducts:', error);
     toast({
-      title: "Analysis Failed",
-      description: "An error occurred while analyzing the products.",
+      title: "Analysis Unavailable",
+      description: "An error occurred while analyzing the products. Your comparison will be created without AI analysis.",
       variant: "destructive",
     });
     return null;

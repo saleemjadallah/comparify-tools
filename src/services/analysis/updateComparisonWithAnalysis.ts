@@ -42,6 +42,8 @@ export const updateComparisonWithAnalysis = async (
     console.log('Fetched comparison products:', comparisonProducts);
 
     // Map Claude analysis to database products
+    let updateSuccess = false;
+    
     for (const cpItem of comparisonProducts) {
       if (!cpItem.products) {
         console.warn('Missing product data for comparison product item');
@@ -63,7 +65,8 @@ export const updateComparisonWithAnalysis = async (
         console.log(`Found matching analysis for product: ${productName}`);
         
         // Create a new specs object by merging existing specs (if any) with the feature ratings
-        const existingSpecs = product.specs && typeof product.specs === 'object' ? product.specs : {};
+        // Ensure specs is an object before spreading
+        const existingSpecs = (product.specs && typeof product.specs === 'object') ? product.specs : {};
         
         // Convert FeatureRating objects to plain objects that match the Json type
         const featureRatingsJson: Record<string, { rating: number; explanation: string }> = {};
@@ -78,32 +81,36 @@ export const updateComparisonWithAnalysis = async (
           });
         }
         
+        // Prepare update data - ensuring it's all JSON-compatible
+        const updateData = {
+          pros: analysis.pros || [],
+          cons: analysis.cons || [],
+          overview: analysis.overview || '',
+          // Store featureRatings as a JSON object in the specs field
+          specs: {
+            ...existingSpecs,
+            featureRatings: featureRatingsJson
+          }
+        };
+        
         // Update product with analysis data
         const { error: updateError } = await supabase
           .from('products')
-          .update({
-            pros: analysis.pros || [],
-            cons: analysis.cons || [],
-            overview: analysis.overview || '',
-            // Store featureRatings as a JSON object in the specs field
-            specs: {
-              ...existingSpecs,  // Only spread if it's an object
-              featureRatings: featureRatingsJson
-            }
-          })
+          .update(updateData)
           .eq('id', cpItem.product_id);
 
         if (updateError) {
           console.error(`Error updating product ${productName} with analysis:`, updateError);
         } else {
           console.log(`Successfully updated product ${productName} with analysis`);
+          updateSuccess = true;
         }
       } else {
         console.warn(`No matching analysis found for product: ${productName}`);
       }
     }
 
-    return true;
+    return updateSuccess;
   } catch (error) {
     console.error('Error in updateComparisonWithAnalysis:', error);
     return false;
