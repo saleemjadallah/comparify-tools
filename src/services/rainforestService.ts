@@ -16,6 +16,7 @@ export const searchProductsFromRainforest = async (
       body: {
         searchQuery: query,
         categoryName: categoryName,
+        limit: 3 // Limit to top 3 results to stay within API quota
       },
     });
 
@@ -36,9 +37,26 @@ export const searchProductsFromRainforest = async (
       console.log('Sample result specs:', data.results[0].specs);
       console.log('Sample result description:', data.results[0].description);
       console.log('Sample rich product description:', data.results[0].rich_product_description);
+      
+      // Log the enhanced data
+      console.log('Sample specifications:', data.results[0].specifications);
+      console.log('Sample features:', data.results[0].features);
+      console.log('Sample top reviews:', data.results[0].top_reviews);
     }
 
-    return data.results as ProductSearchResult[];
+    // Transform the results to match our ProductSearchResult interface
+    return data.results.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      brand: item.brand || '',
+      price: item.price || 0,
+      category: categoryName,
+      rating: item.rating,
+      specs: item.specs || {},
+      imageUrl: item.imageUrl || '',
+      description: item.description || '',
+      rich_product_description: item.rich_product_description || [],
+    }));
   } catch (error) {
     console.error('Exception in searchProductsFromRainforest:', error);
     return [];

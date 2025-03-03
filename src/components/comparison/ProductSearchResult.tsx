@@ -15,6 +15,9 @@ const truncateText = (text: string, maxLength: number = 40) => {
 };
 
 const ProductSearchResult = ({ product, onClick }: ProductSearchResultProps) => {
+  // Extract a few key features to show in the search result
+  const keyFeatures = product.features?.slice(0, 2) || [];
+  
   return (
     <div
       className="p-3 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
@@ -30,7 +33,18 @@ const ProductSearchResult = ({ product, onClick }: ProductSearchResultProps) => 
       
       {product.rating && (
         <div className="mt-1">
-          <ComparisonRating rating={product.rating} size="sm" />
+          <Compari
+
+sonRating rating={product.rating} size="sm" />
+        </div>
+      )}
+      
+      {/* Show key features if available */}
+      {keyFeatures.length > 0 && (
+        <div className="mt-2 text-xs text-muted-foreground">
+          {keyFeatures.map((feature, index) => (
+            <div key={index} className="line-clamp-1">• {feature}</div>
+          ))}
         </div>
       )}
       

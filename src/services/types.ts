@@ -1,3 +1,4 @@
+
 import { Json } from "@/integrations/supabase/types";
 
 export interface ProductSearchResult {
@@ -11,6 +12,13 @@ export interface ProductSearchResult {
   imageUrl?: string;
   description?: string;
   rich_product_description?: string[];
+  // Enhanced data
+  specifications?: any[];
+  features?: string[];
+  top_reviews?: any[];
+  images?: string[];
+  similar_products?: any[];
+  variants?: any[];
 }
 
 // Define types for Supabase tables to help TypeScript
@@ -38,6 +46,13 @@ export interface Product {
   rich_product_description?: string[] | null;
   created_at?: string | null;
   updated_at?: string | null;
+  // Enhanced data
+  specifications?: any[] | null;
+  features?: string[] | null;
+  top_reviews?: any[] | null;
+  images?: string[] | null;
+  similar_products?: any[] | null;
+  variants?: any[] | null;
 }
 
 export interface Comparison {

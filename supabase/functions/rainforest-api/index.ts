@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get request parameters
-    const { searchQuery, categoryName } = await req.json()
+    const { searchQuery, categoryName, limit = 5 } = await req.json()
     
     if (!searchQuery || !categoryName) {
       throw new Error('Missing required parameters: searchQuery and categoryName')
@@ -40,57 +40,91 @@ Deno.serve(async (req) => {
       throw new Error('Rainforest API key is not configured')
     }
 
-    // Convert category name to Amazon ASIN prefix as needed
-    const categoryMapping: Record<string, string> = {
-      'Smartphones': 'B0',
-      'Laptops': 'B0',
-      'Headphones': 'B0',
-      'TVs': 'B0',
-      'Cameras': 'B0',
-      'Smartwatches': 'B0',
-      'Gaming Consoles': 'B0',
-      'Smart Home Devices': 'B0',
-      'Tablets': 'B0',
-    }
-
-    // Prepare Rainforest API request
+    // Prepare Rainforest API search request
     const apiUrl = 'https://api.rainforestapi.com/request'
-    const params = new URLSearchParams({
+    const searchParams = new URLSearchParams({
       api_key: rainforestApiKey,
       type: 'search',
       amazon_domain: 'amazon.com',
       search_term: `${searchQuery} ${categoryName}`,
-      include_summarization_attributes: 'true', // Add this parameter to get more detailed product info
-      include_all_full_description: 'true'      // Add this to get the full product description
     })
 
-    console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName} with summarization attributes and descriptions`)
+    console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName}`)
     
-    // Make the request to Rainforest API
-    const response = await fetch(`${apiUrl}?${params.toString()}`)
+    // Make the initial search request to Rainforest API
+    const searchResponse = await fetch(`${apiUrl}?${searchParams.toString()}`)
     
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Rainforest API error:', errorText)
-      throw new Error(`Rainforest API error: ${response.status} ${errorText}`)
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text()
+      console.error('Rainforest API search error:', errorText)
+      throw new Error(`Rainforest API search error: ${searchResponse.status} ${errorText}`)
     }
     
-    const data = await response.json()
+    const searchData = await searchResponse.json()
     
-    // Transform the response to match our ProductSearchResult format
-    const transformedResults = data.search_results.map((item: any) => ({
-      id: item.asin || `rainforest-${crypto.randomUUID()}`,
-      name: item.title || 'Unknown Product',
-      brand: item.brand || '',
-      price: item.price?.value || 0,
+    // Extract ASINs from search results (limit to top N results)
+    const asins = searchData.search_results
+      .slice(0, limit)
+      .map((item: any) => item.asin)
+      .filter((asin: string) => asin) // Filter out any undefined ASINs
+    
+    console.log(`Found ${asins.length} products, fetching detailed information`)
+    
+    // Fetch detailed product data for each ASIN
+    const productDetailsPromises = asins.map(async (asin: string) => {
+      const productParams = new URLSearchParams({
+        api_key: rainforestApiKey,
+        type: 'product',
+        amazon_domain: 'amazon.com',
+        asin: asin,
+        include_summarization_attributes: 'true',
+        include_all_full_description: 'true',
+        include_specifications: 'true',
+        include_reviews: 'true',
+        include_top_reviews: 'true',
+        include_pricing_context: 'true',
+        include_similar_products: 'true'
+      })
+      
+      const productResponse = await fetch(`${apiUrl}?${productParams.toString()}`)
+      
+      if (!productResponse.ok) {
+        console.error(`Error fetching product details for ASIN ${asin}:`, await productResponse.text())
+        return null
+      }
+      
+      return await productResponse.json()
+    })
+    
+    // Wait for all product detail requests to complete
+    const productDetailsResults = await Promise.all(productDetailsPromises)
+    
+    // Filter out any failed requests
+    const productDetails = productDetailsResults.filter(result => result !== null)
+    
+    // Transform the detailed product data
+    const transformedResults = productDetails.map((data: any) => ({
+      id: data.product.asin || `rainforest-${crypto.randomUUID()}`,
+      name: data.product.title || 'Unknown Product',
+      brand: data.product.brand || '',
+      price: data.product.buybox_winner?.price?.value || 0,
+      currency: data.product.buybox_winner?.price?.currency || 'USD',
       category: categoryName,
-      rating: item.rating,
-      specs: transformRainforestSpecs(item),
-      imageUrl: item.image || '',
+      rating: data.product.rating,
+      total_reviews: data.product.ratings_total,
+      specs: transformRainforestSpecs(data.product),
+      imageUrl: data.product.main_image?.link || '',
+      images: (data.product.images || []).map((img: any) => img.link),
       source: 'rainforest',
-      source_id: item.asin || '',
-      description: item.description || '',
-      rich_product_description: extractRichProductDescription(item)
+      source_id: data.product.asin || '',
+      description: data.product.description || '',
+      rich_product_description: extractRichProductDescription(data.product),
+      specifications: data.product.specifications || [],
+      features: data.product.features || [],
+      top_reviews: extractTopReviews(data.product),
+      pricing_context: data.product.pricing_context || {},
+      similar_products: (data.product.similar_products || []).slice(0, 5),
+      variants: data.product.variants || []
     }))
 
     // Return the transformed results
@@ -109,18 +143,18 @@ Deno.serve(async (req) => {
 })
 
 // Helper function to extract rich product description from Rainforest data
-function extractRichProductDescription(item: any): string[] {
+function extractRichProductDescription(product: any): string[] {
   const richDescriptions: string[] = []
   
   // Extract from features list
-  if (item.features && Array.isArray(item.features)) {
-    richDescriptions.push(...item.features)
+  if (product.features && Array.isArray(product.features)) {
+    richDescriptions.push(...product.features)
   }
   
   // Extract from full_description if it exists
-  if (item.full_description && typeof item.full_description === 'string') {
+  if (product.description && typeof product.description === 'string') {
     // Split by paragraphs or bullet points
-    const parts = item.full_description
+    const parts = product.description
       .split(/\n+|•/)
       .map((part: string) => part.trim())
       .filter((part: string) => part.length > 0)
@@ -131,36 +165,72 @@ function extractRichProductDescription(item: any): string[] {
   return richDescriptions
 }
 
+// Extract top reviews from product data
+function extractTopReviews(product: any): any[] {
+  const reviews = []
+  
+  if (product.top_reviews && Array.isArray(product.top_reviews)) {
+    return product.top_reviews.map((review: any) => ({
+      id: review.id,
+      title: review.title,
+      body: review.body,
+      rating: review.rating,
+      date: review.date,
+      verified_purchase: review.verified_purchase
+    }))
+  }
+  
+  return reviews
+}
+
 // Helper function to transform Rainforest product specs
-function transformRainforestSpecs(item: any): Record<string, string> {
+function transformRainforestSpecs(product: any): Record<string, string> {
   const specs: Record<string, string> = {}
   
   // Add basic specifications
-  if (item.price?.currency) specs['Currency'] = item.price.currency
-  if (item.rating) specs['Rating'] = item.rating.toString()
-  if (item.ratings_total) specs['Total Reviews'] = item.ratings_total.toString()
-  if (item.is_prime) specs['Prime'] = item.is_prime ? 'Yes' : 'No'
-  if (item.delivery?.is_free) specs['Free Delivery'] = item.delivery.is_free ? 'Yes' : 'No'
+  if (product.buybox_winner?.price?.currency) specs['Currency'] = product.buybox_winner.price.currency
+  if (product.rating) specs['Rating'] = product.rating.toString()
+  if (product.ratings_total) specs['Total Reviews'] = product.ratings_total.toString()
+  if (product.buybox_winner?.fulfillment?.is_prime) specs['Prime'] = 'Yes'
+  if (product.buybox_winner?.shipping?.is_free) specs['Free Shipping'] = 'Yes'
   
-  // Add summarization attributes if available
-  if (item.summarization_attributes && Array.isArray(item.summarization_attributes)) {
-    item.summarization_attributes.forEach((attr: any) => {
-      if (attr.name && attr.value) {
-        specs[attr.name] = attr.value;
-      }
-    });
+  // Add dimensions if available
+  if (product.dimensions) {
+    for (const [key, value] of Object.entries(product.dimensions)) {
+      specs[`Dimension (${key})`] = value.toString()
+    }
   }
   
-  // Add any additional specifications from the features array
-  if (item.features && Array.isArray(item.features)) {
-    item.features.forEach((feature: string, index: number) => {
-      const parts = feature.split(':')
-      if (parts.length >= 2) {
-        const key = parts[0].trim()
-        const value = parts.slice(1).join(':').trim()
-        specs[key] = value
-      } else if (feature.trim()) {
-        specs[`Feature ${index + 1}`] = feature.trim()
+  // Add weight if available
+  if (product.weight) {
+    specs['Weight'] = `${product.weight.value} ${product.weight.unit}`
+  }
+  
+  // Add categorization
+  if (product.categories && product.categories.length > 0) {
+    specs['Category Path'] = product.categories.join(' > ')
+  }
+  
+  // Add summarization attributes if available
+  if (product.summarization_attributes && Array.isArray(product.summarization_attributes)) {
+    product.summarization_attributes.forEach((attr: any) => {
+      if (attr.name && attr.value) {
+        specs[attr.name] = attr.value
+      }
+    })
+  }
+  
+  // Add specifications from the specifications array
+  if (product.specifications && Array.isArray(product.specifications)) {
+    product.specifications.forEach((specGroup: any) => {
+      if (specGroup.name && specGroup.value) {
+        specs[specGroup.name] = specGroup.value
+      } else if (specGroup.specifications && Array.isArray(specGroup.specifications)) {
+        specGroup.specifications.forEach((spec: any) => {
+          if (spec.name && spec.value) {
+            specs[spec.name] = spec.value
+          }
+        })
       }
     })
   }
