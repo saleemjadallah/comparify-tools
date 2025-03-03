@@ -15,10 +15,16 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x">
         {products.map((product) => {
-          // First check if we have AI-generated feature ratings
-          const aiRating = product.feature_ratings?.[feature];
+          // Check if we have AI-generated feature ratings
+          const featureRatings = product.feature_ratings || {};
           
-          // Fallback to mock data if AI ratings not available
+          // Try to get the rating for this specific feature
+          // Note: the feature key in the DB might be formatted differently than the UI
+          const aiRating = featureRatings[feature] || 
+                           featureRatings[feature.toLowerCase()] || 
+                           featureRatings[feature.replace(/\s+/g, '')];
+          
+          // Fallback data for development/testing
           const mockFeatureData: Record<string, Record<string, { rating: number; description: string }>> = {
             "Camera Quality": {
               "iPhone 14 Pro": { 
@@ -62,6 +68,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
             }
           };
           
+          // Use either AI-generated rating or mock data (for testing/development)
           const mockProductData = mockFeatureData[feature]?.[product.name];
           
           // Use AI-generated rating if available, otherwise fall back to mock data
@@ -70,6 +77,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
             description: aiRating.explanation
           } : mockProductData;
           
+          // If no data is available at all
           if (!featureData) {
             return (
               <div key={product.id} className="p-6">
@@ -78,6 +86,8 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
               </div>
             );
           }
+          
+          console.log(`Feature ${feature} for ${product.name}:`, { aiRating, featureData });
           
           return (
             <div key={product.id} className="p-6">

@@ -11,8 +11,11 @@ export const updateComparisonWithAnalysis = async (
 ): Promise<boolean> => {
   try {
     if (!analysisData || !analysisData.products || analysisData.products.length === 0) {
+      console.error('Invalid analysis data received:', analysisData);
       return false;
     }
+
+    console.log('Analysis data to save:', JSON.stringify(analysisData, null, 2));
 
     // First, get the existing comparison products
     const { data: comparisonProducts, error: fetchError } = await supabase
@@ -35,35 +38,47 @@ export const updateComparisonWithAnalysis = async (
       return false;
     }
 
+    console.log('Fetched comparison products:', comparisonProducts);
+
     // Map Claude analysis to database products
     for (const cpItem of comparisonProducts) {
+      if (!cpItem.products) {
+        console.warn('Missing product data for comparison product item');
+        continue;
+      }
+      
       const product = cpItem.products;
-      if (product) {
-        const productName = product.name;
+      const productName = product.name;
+      
+      // Find matching analysis from Claude
+      // Use more flexible matching to handle slight variations in product names
+      const analysis = analysisData.products.find(p => 
+        p.name.toLowerCase() === productName.toLowerCase() ||
+        productName.toLowerCase().includes(p.name.toLowerCase()) ||
+        p.name.toLowerCase().includes(productName.toLowerCase())
+      );
+
+      if (analysis) {
+        console.log(`Found matching analysis for product: ${productName}`);
         
-        // Find matching analysis from Claude
-        const analysis = analysisData.products.find(p => 
-          p.name.toLowerCase() === productName.toLowerCase() ||
-          productName.toLowerCase().includes(p.name.toLowerCase()) ||
-          p.name.toLowerCase().includes(productName.toLowerCase())
-        );
+        // Update product with analysis data
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({
+            pros: analysis.pros || [],
+            cons: analysis.cons || [],
+            overview: analysis.overview || '',
+            feature_ratings: analysis.featureRatings || {}
+          })
+          .eq('id', cpItem.product_id);
 
-        if (analysis) {
-          // Update product with analysis data
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({
-              pros: analysis.pros,
-              cons: analysis.cons,
-              overview: analysis.overview,
-              feature_ratings: analysis.featureRatings
-            })
-            .eq('id', cpItem.product_id);
-
-          if (updateError) {
-            console.error(`Error updating product ${productName} with analysis:`, updateError);
-          }
+        if (updateError) {
+          console.error(`Error updating product ${productName} with analysis:`, updateError);
+        } else {
+          console.log(`Successfully updated product ${productName} with analysis`);
         }
+      } else {
+        console.warn(`No matching analysis found for product: ${productName}`);
       }
     }
 

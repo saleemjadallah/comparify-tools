@@ -17,10 +17,13 @@ serve(async (req) => {
 
   try {
     if (!CLAUDE_API_KEY) {
+      console.error('Claude API key is not configured');
       throw new Error('Claude API key is not configured');
     }
 
-    const { products, features, category } = await req.json();
+    // Parse the request body
+    const body = await req.json();
+    const { products, features, category } = body;
 
     console.log('Analyzing products:', products.map((p: any) => p.name).join(', '));
     console.log('Important features:', features.join(', '));
@@ -35,11 +38,15 @@ serve(async (req) => {
     }
 
     // Prepare product information for Claude
-    const productInfo = products.map(product => {
+    const productInfo = products.map((product: any) => {
       const { name, brand, price, specs } = product;
-      const specsText = specs ? Object.entries(specs)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join('\n  ') : 'No specifications available';
+      let specsText = 'No specifications available';
+      
+      if (specs && typeof specs === 'object') {
+        specsText = Object.entries(specs)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n  ');
+      }
       
       return `Product: ${name}
 Brand: ${brand || 'Unknown'}
@@ -126,12 +133,43 @@ Format your response as JSON with the following structure:
     if (jsonMatch) {
       try {
         analysisResults = JSON.parse(jsonMatch[0]);
+        console.log('Successfully parsed JSON from Claude response');
       } catch (e) {
         console.error('Error parsing JSON from Claude response:', e);
         throw new Error('Failed to parse Claude response as JSON');
       }
     } else {
+      console.error('Could not extract JSON from Claude response');
       throw new Error('Could not extract JSON from Claude response');
+    }
+
+    // Create mock data if needed (for testing without using Claude API credits)
+    if (Deno.env.get('USE_MOCK_DATA') === 'true') {
+      console.log('Using mock data instead of Claude API response');
+      analysisResults = {
+        products: products.map((product: any) => ({
+          name: product.name,
+          overview: `This is a high-quality ${category} that offers good value for money.`,
+          pros: [
+            `Great ${features[0]} performance`,
+            `Excellent ${features[1]} capabilities`,
+            `Good overall build quality`
+          ],
+          cons: [
+            `Could improve on ${features[2]}`,
+            `Price is slightly higher than competitors`
+          ],
+          featureRatings: Object.fromEntries(
+            features.map(feature => [
+              feature, 
+              {
+                rating: Math.floor(Math.random() * 3) + 7, // Random rating between 7-9
+                explanation: `This product performs ${['well', 'admirably', 'excellently'][Math.floor(Math.random() * 3)]} on this feature.`
+              }
+            ])
+          )
+        }))
+      };
     }
 
     return new Response(JSON.stringify(analysisResults), {

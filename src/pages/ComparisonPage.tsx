@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,6 +30,7 @@ const ComparisonPage = () => {
       try {
         const data = await getComparison(comparisonId);
         if (data) {
+          console.log('Loaded comparison data:', data);
           setComparisonData(data);
         } else {
           toast({
@@ -51,6 +53,14 @@ const ComparisonPage = () => {
 
     fetchData();
   }, [comparisonId, toast]);
+
+  // Helper function to check if analysis data is present
+  const hasAnalysisData = (product: any) => {
+    return product && 
+           ((product.pros && product.pros.length > 0) || 
+            (product.cons && product.cons.length > 0) || 
+            (product.feature_ratings && Object.keys(product.feature_ratings).length > 0));
+  };
 
   if (loading) {
     return (
@@ -93,6 +103,24 @@ const ComparisonPage = () => {
             comparisonId={comparisonId || ""}
           />
         </div>
+
+        {/* Analysis Status */}
+        {!comparisonData.products.some(hasAnalysisData) && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 p-4 rounded-lg">
+            <h3 className="font-medium text-amber-800">AI Analysis Unavailable</h3>
+            <p className="text-amber-700">
+              The AI analysis for these products is currently unavailable. This could be due to:
+            </p>
+            <ul className="list-disc ml-6 mt-2 text-amber-700">
+              <li>The AI service being temporarily unavailable</li>
+              <li>Insufficient product data for analysis</li>
+              <li>Product information not being recognized by the AI</li>
+            </ul>
+            <p className="mt-2 text-amber-700">
+              We're showing default comparison information instead.
+            </p>
+          </div>
+        )}
 
         {/* Product Overview Section */}
         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 mb-12">
