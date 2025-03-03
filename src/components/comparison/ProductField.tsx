@@ -1,11 +1,14 @@
 
 import { useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Info, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import ProductSearchResult from "./ProductSearchResult";
 import { mockProductDatabase } from "@/data/products";
+import { Tooltip } from "@/components/ui/tooltip";
+import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import ComparisonRating from "./ComparisonRating";
 
 interface Product {
   id: string;
@@ -15,6 +18,10 @@ interface Product {
     name: string;
     brand: string;
     price: number;
+    rating?: number;
+    specs?: {
+      [key: string]: string;
+    };
   };
 }
 
@@ -40,6 +47,7 @@ const ProductField = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -58,8 +66,19 @@ const ProductField = ({
       product.brand.toLowerCase().includes(query.toLowerCase())
     );
 
-    setSearchResults(results);
-    setShowSearchResults(results.length > 0);
+    // Add mock rating and specs data for demo purposes
+    const enhancedResults = results.map(result => ({
+      ...result,
+      rating: Math.floor(Math.random() * 2) + 3 + Math.random(), // Random rating between 3.0 and 5.0
+      specs: {
+        "Color": ["Black", "Silver", "White"][Math.floor(Math.random() * 3)],
+        "Memory": ["4GB", "8GB", "16GB"][Math.floor(Math.random() * 3)],
+        "Storage": ["128GB", "256GB", "512GB"][Math.floor(Math.random() * 3)]
+      }
+    }));
+
+    setSearchResults(enhancedResults);
+    setShowSearchResults(enhancedResults.length > 0);
   };
 
   const handleProductSelect = (selectedProduct: any) => {
@@ -81,7 +100,9 @@ const ProductField = ({
               placeholder={`Product ${index + 1} name or model`}
               value={product.name}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pr-10"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+              className={`w-full pr-10 ${isFocused ? 'ring-2 ring-primary/30' : ''}`}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               <Search className="h-4 w-4 text-muted-foreground" />
@@ -89,8 +110,8 @@ const ProductField = ({
           </div>
           
           {/* Search Results Dropdown */}
-          {showSearchResults && (
-            <div className="absolute w-full mt-1 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-auto">
+          {showSearchResults && isFocused && (
+            <div className="absolute w-full mt-1 bg-white rounded-md shadow-lg border z-50 max-h-64 overflow-auto divide-y divide-gray-100">
               {searchResults.map((result) => (
                 <ProductSearchResult 
                   key={result.id} 
@@ -113,13 +134,52 @@ const ProductField = ({
         </Button>
       </div>
       
-      {/* Product Details (if selected from search) */}
+      {/* Enhanced Product Details (if selected from search) */}
       {product.details && (
-        <div className="ml-2 pl-3 border-l-2 border-primary/20 text-sm">
-          <div className="text-muted-foreground">
-            <span className="font-medium text-foreground">{product.details.brand}</span>
-            {' • '}${product.details.price}
+        <div className="ml-2 pl-3 border-l-2 border-primary/20 space-y-2">
+          <div className="flex justify-between items-center">
+            <div className="text-sm">
+              <span className="font-medium text-foreground">{product.details.brand}</span>
+              {' • '}
+              <span className="text-muted-foreground">${product.details.price}</span>
+            </div>
+            
+            {product.details.rating && (
+              <div className="flex items-center">
+                <ComparisonRating rating={product.details.rating} size="sm" />
+              </div>
+            )}
           </div>
+          
+          {product.details.specs && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-1">
+              {Object.entries(product.details.specs).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="text-muted-foreground">{key}:</span>
+                  <span className="font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3 mr-1" />
+                  View more details
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="p-0 max-w-xs">
+                <div className="p-3 text-xs">
+                  <div className="font-medium mb-1">{product.details.name}</div>
+                  <p className="text-muted-foreground">
+                    Full product information will be available in the comparison view.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
     </div>
