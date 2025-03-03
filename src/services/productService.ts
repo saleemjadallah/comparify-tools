@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { mockProductDatabase } from "@/data/products";
 
@@ -12,6 +13,46 @@ export interface ProductSearchResult {
   imageUrl?: string;
 }
 
+// Define types for Supabase tables to help TypeScript
+interface Category {
+  id: number;
+  name: string;
+  created_at?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  category_id: number;
+  image_url?: string;
+  rating?: number;
+  description?: string;
+  source?: string;
+  source_id?: string;
+  specs?: Record<string, string>;
+  pros?: string[];
+  cons?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface Comparison {
+  id: string;
+  title: string;
+  category_id: number;
+  feature_importance?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ComparisonProduct {
+  comparison_id: string;
+  product_id: string;
+  position: number;
+}
+
 // Function to search products from internal database
 export const searchProductsFromDatabase = async (
   query: string,
@@ -21,13 +62,16 @@ export const searchProductsFromDatabase = async (
 
   try {
     // First try to get the category ID
-    const { data: categoryData } = await supabase
+    const { data: categoryData, error: categoryError } = await supabase
       .from('categories')
       .select('id')
       .eq('name', categoryName)
       .single();
 
-    if (!categoryData?.id) return [];
+    if (categoryError || !categoryData?.id) {
+      console.error('Error finding category:', categoryError);
+      return [];
+    }
 
     // Then search for products in that category
     const { data, error } = await supabase
@@ -42,7 +86,7 @@ export const searchProductsFromDatabase = async (
       return [];
     }
 
-    return (data || []).map(item => ({
+    return (data || []).map((item: Product) => ({
       id: item.id,
       name: item.name,
       brand: item.brand || '',
@@ -122,18 +166,19 @@ export const searchProducts = async (
 export const saveProduct = async (product: ProductSearchResult, categoryName: string): Promise<string> => {
   try {
     // Get category id
-    const { data: categoryData } = await supabase
+    const { data: categoryData, error: categoryError } = await supabase
       .from('categories')
       .select('id')
       .eq('name', categoryName)
       .single();
     
-    if (!categoryData?.id) {
+    if (categoryError || !categoryData?.id) {
+      console.error('Error finding category:', categoryError);
       throw new Error(`Category not found: ${categoryName}`);
     }
 
     // Prepare product data
-    const productData = {
+    const productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
       name: product.name,
       brand: product.brand,
       price: product.price,
@@ -146,13 +191,17 @@ export const saveProduct = async (product: ProductSearchResult, categoryName: st
     };
 
     // Check if product already exists
-    const { data: existingProduct } = await supabase
+    const { data: existingProduct, error: existingError } = await supabase
       .from('products')
       .select('id')
       .eq('name', product.name)
       .eq('brand', product.brand)
       .eq('category_id', categoryData.id)
       .single();
+
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('Error checking existing product:', existingError);
+    }
 
     if (existingProduct?.id) {
       // Update existing product
@@ -172,6 +221,8 @@ export const saveProduct = async (product: ProductSearchResult, categoryName: st
         .single();
       
       if (error) throw error;
+      if (!data) throw new Error('Failed to retrieve new product ID');
+      
       return data.id;
     }
   } catch (error) {
@@ -188,32 +239,42 @@ export const saveComparison = async (
 ): Promise<string> => {
   try {
     // Get category id
-    const { data: categoryData } = await supabase
+    const { data: categoryData, error: categoryError } = await supabase
       .from('categories')
       .select('id')
       .eq('name', categoryName)
       .single();
     
-    if (!categoryData?.id) {
+    if (categoryError || !categoryData?.id) {
+      console.error('Error finding category:', categoryError);
       throw new Error(`Category not found: ${categoryName}`);
     }
 
     // Insert comparison
-    const { data, error } = await supabase
+    const comparisonData: Omit<Comparison, 'id' | 'created_at' | 'updated_at'> = {
+      title: `${categoryName} Comparison`,
+      category_id: categoryData.id,
+      feature_importance: featureImportance
+    };
+
+    const { data: comparisonResult, error: comparisonError } = await supabase
       .from('comparisons')
-      .insert({
-        title: `${categoryName} Comparison`,
-        category_id: categoryData.id,
-        feature_importance: featureImportance
-      })
+      .insert(comparisonData)
       .select('id')
       .single();
     
-    if (error) throw error;
+    if (comparisonError) {
+      console.error('Error creating comparison:', comparisonError);
+      throw comparisonError;
+    }
+    
+    if (!comparisonResult) {
+      throw new Error('Failed to retrieve new comparison ID');
+    }
     
     // Insert comparison products
-    const comparisonProducts = productIds.map((productId, index) => ({
-      comparison_id: data.id,
+    const comparisonProducts: ComparisonProduct[] = productIds.map((productId, index) => ({
+      comparison_id: comparisonResult.id,
       product_id: productId,
       position: index + 1
     }));
@@ -222,9 +283,12 @@ export const saveComparison = async (
       .from('comparison_products')
       .insert(comparisonProducts);
     
-    if (productsError) throw productsError;
+    if (productsError) {
+      console.error('Error adding products to comparison:', productsError);
+      throw productsError;
+    }
     
-    return data.id;
+    return comparisonResult.id;
   } catch (error) {
     console.error('Error saving comparison:', error);
     return '';
@@ -246,7 +310,14 @@ export const getComparison = async (comparisonId: string) => {
       .eq('id', comparisonId)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting comparison:', error);
+      throw error;
+    }
+    
+    if (!comparison) {
+      throw new Error('Comparison not found');
+    }
     
     // Get products in this comparison
     const { data: comparisonProducts, error: productsError } = await supabase
@@ -258,10 +329,13 @@ export const getComparison = async (comparisonId: string) => {
       .eq('comparison_id', comparisonId)
       .order('position');
     
-    if (productsError) throw productsError;
+    if (productsError) {
+      console.error('Error getting comparison products:', productsError);
+      throw productsError;
+    }
     
     // Format the data
-    const products = comparisonProducts.map(cp => ({
+    const products = comparisonProducts.map((cp: any) => ({
       id: cp.products.id,
       name: cp.products.name,
       brand: cp.products.brand,
@@ -285,3 +359,4 @@ export const getComparison = async (comparisonId: string) => {
     return null;
   }
 };
+

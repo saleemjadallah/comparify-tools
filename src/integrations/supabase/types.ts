@@ -9,7 +9,154 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      comparison_products: {
+        Row: {
+          comparison_id: string
+          position: number | null
+          product_id: string
+        }
+        Insert: {
+          comparison_id: string
+          position?: number | null
+          product_id: string
+        }
+        Update: {
+          comparison_id?: string
+          position?: number | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparison_products_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: false
+            referencedRelation: "comparisons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comparison_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comparisons: {
+        Row: {
+          category_id: number | null
+          created_at: string | null
+          feature_importance: string[] | null
+          id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: number | null
+          created_at?: string | null
+          feature_importance?: string[] | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: number | null
+          created_at?: string | null
+          feature_importance?: string[] | null
+          id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparisons_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string | null
+          category_id: number | null
+          cons: string[] | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number | null
+          pros: string[] | null
+          rating: number | null
+          source: string | null
+          source_id: string | null
+          specs: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category_id?: number | null
+          cons?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price?: number | null
+          pros?: string[] | null
+          rating?: number | null
+          source?: string | null
+          source_id?: string | null
+          specs?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category_id?: number | null
+          cons?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number | null
+          pros?: string[] | null
+          rating?: number | null
+          source?: string | null
+          source_id?: string | null
+          specs?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
