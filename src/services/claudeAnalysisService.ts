@@ -95,7 +95,7 @@ export const updateComparisonWithAnalysis = async (
     const { data: comparisonProducts, error: fetchError } = await supabase
       .from('comparison_products')
       .select(`
-        id,
+        comparison_id,
         product_id,
         position,
         products(id, name)
@@ -109,29 +109,31 @@ export const updateComparisonWithAnalysis = async (
 
     // Map Claude analysis to database products
     for (const cpItem of comparisonProducts) {
-      const productName = cpItem.products.name;
-      
-      // Find matching analysis from Claude
-      const analysis = analysisData.products.find(p => 
-        p.name.toLowerCase() === productName.toLowerCase() ||
-        productName.toLowerCase().includes(p.name.toLowerCase()) ||
-        p.name.toLowerCase().includes(productName.toLowerCase())
-      );
+      if (cpItem.products) {
+        const productName = cpItem.products.name;
+        
+        // Find matching analysis from Claude
+        const analysis = analysisData.products.find(p => 
+          p.name.toLowerCase() === productName.toLowerCase() ||
+          productName.toLowerCase().includes(p.name.toLowerCase()) ||
+          p.name.toLowerCase().includes(productName.toLowerCase())
+        );
 
-      if (analysis) {
-        // Update product with analysis data
-        const { error: updateError } = await supabase
-          .from('products')
-          .update({
-            pros: analysis.pros,
-            cons: analysis.cons,
-            overview: analysis.overview,
-            feature_ratings: analysis.featureRatings
-          })
-          .eq('id', cpItem.product_id);
+        if (analysis) {
+          // Update product with analysis data
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({
+              pros: analysis.pros,
+              cons: analysis.cons,
+              overview: analysis.overview,
+              feature_ratings: analysis.featureRatings
+            })
+            .eq('id', cpItem.product_id);
 
-        if (updateError) {
-          console.error(`Error updating product ${productName} with analysis:`, updateError);
+          if (updateError) {
+            console.error(`Error updating product ${productName} with analysis:`, updateError);
+          }
         }
       }
     }
