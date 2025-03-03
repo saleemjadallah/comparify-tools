@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { AnalysisResponse } from "./types";
+import { AnalysisResponse, FeatureRating } from "./types";
+import { Json } from "@/integrations/supabase/types";
 
 /**
  * Updates a comparison with Claude AI analysis
@@ -64,6 +65,19 @@ export const updateComparisonWithAnalysis = async (
         // Create a new specs object by merging existing specs (if any) with the feature ratings
         const existingSpecs = product.specs && typeof product.specs === 'object' ? product.specs : {};
         
+        // Convert FeatureRating objects to plain objects that match the Json type
+        const featureRatingsJson: Record<string, { rating: number; explanation: string }> = {};
+        
+        // If we have feature ratings, convert them to a format compatible with Json type
+        if (analysis.featureRatings) {
+          Object.entries(analysis.featureRatings).forEach(([key, value]) => {
+            featureRatingsJson[key] = {
+              rating: value.rating,
+              explanation: value.explanation
+            };
+          });
+        }
+        
         // Update product with analysis data
         const { error: updateError } = await supabase
           .from('products')
@@ -74,7 +88,7 @@ export const updateComparisonWithAnalysis = async (
             // Store featureRatings as a JSON object in the specs field
             specs: {
               ...existingSpecs,  // Only spread if it's an object
-              featureRatings: analysis.featureRatings || {}
+              featureRatings: featureRatingsJson
             }
           })
           .eq('id', cpItem.product_id);
