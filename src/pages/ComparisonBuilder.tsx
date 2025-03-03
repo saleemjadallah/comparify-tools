@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,6 +8,7 @@ import ProductsStep from "@/components/comparison/ProductsStep";
 import FeaturesStep from "@/components/comparison/FeaturesStep";
 import NavigationButtons from "@/components/comparison/NavigationButtons";
 import { saveProduct, saveComparison } from "@/services/productService";
+import { analyzeProducts, updateComparisonWithAnalysis } from "@/services/claudeAnalysisService";
 
 const ComparisonBuilder = () => {
   const navigate = useNavigate();
@@ -147,6 +149,34 @@ const ComparisonBuilder = () => {
         
         if (!comparisonId) {
           throw new Error("Failed to create comparison");
+        }
+
+        // Run Claude AI analysis on the products
+        toast({
+          title: "Analyzing products",
+          description: "Using AI to analyze your selected products...",
+        });
+
+        const productDetails = products
+          .filter(p => p.details)
+          .map(p => p.details);
+
+        if (productDetails.length >= 2) {
+          const analysisResults = await analyzeProducts(
+            productDetails,
+            featureImportance,
+            category
+          );
+
+          if (analysisResults) {
+            // Update the comparison with AI analysis
+            await updateComparisonWithAnalysis(comparisonId, analysisResults);
+
+            toast({
+              title: "Analysis complete",
+              description: "Product analysis has been added to your comparison.",
+            });
+          }
         }
         
         // Navigate to comparison page

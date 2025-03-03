@@ -25,3 +25,6 @@ port = 54324
 
 [functions.rainforest-api]
 verify_jwt = true
+
+[functions.claude-product-analysis]
+verify_jwt = true
