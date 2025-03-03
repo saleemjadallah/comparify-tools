@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ComparisonState, Product } from "./types";
 import { saveProduct, saveComparison } from "@/services/productService";
-import { analyzeProducts, updateComparisonWithAnalysis } from "@/services/claudeAnalysisService";
+import { analyzeProducts, updateComparisonWithAnalysis } from "@/services/analysis";
 import { useValidation } from "./validationUtils";
 
 export const useComparisonGenerator = (state: ComparisonState) => {
