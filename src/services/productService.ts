@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { mockProductDatabase } from "@/data/products";
+import { Json } from "@/integrations/supabase/types";
 
 export interface ProductSearchResult {
   id: string;
@@ -20,37 +21,38 @@ interface Category {
   created_at?: string;
 }
 
+// Update the Product interface to match Supabase's data structure
 interface Product {
   id: string;
   name: string;
-  brand: string;
-  price: number;
-  category_id: number;
-  image_url?: string;
-  rating?: number;
-  description?: string;
-  source?: string;
-  source_id?: string;
-  specs?: Record<string, string>;
-  pros?: string[];
-  cons?: string[];
-  created_at?: string;
-  updated_at?: string;
+  brand: string | null;
+  price: number | null;
+  category_id: number | null;
+  image_url?: string | null;
+  rating?: number | null;
+  description?: string | null;
+  source?: string | null;
+  source_id?: string | null;
+  specs?: Json | null;
+  pros?: string[] | null;
+  cons?: string[] | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 interface Comparison {
   id: string;
-  title: string;
-  category_id: number;
-  feature_importance?: string[];
-  created_at?: string;
-  updated_at?: string;
+  title: string | null;
+  category_id: number | null;
+  feature_importance?: string[] | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 interface ComparisonProduct {
   comparison_id: string;
   product_id: string;
-  position: number;
+  position: number | null;
 }
 
 // Function to search products from internal database
@@ -86,14 +88,16 @@ export const searchProductsFromDatabase = async (
       return [];
     }
 
-    return (data || []).map((item: Product) => ({
+    // Update the transformation to properly handle nulls and type casting
+    return (data || []).map((item) => ({
       id: item.id,
       name: item.name,
       brand: item.brand || '',
       price: item.price || 0,
-      rating: item.rating,
-      specs: item.specs,
-      imageUrl: item.image_url
+      rating: item.rating || undefined,
+      // Safe type conversion for specs
+      specs: item.specs ? (item.specs as Record<string, string>) : undefined,
+      imageUrl: item.image_url || undefined
     }));
   } catch (error) {
     console.error('Error in searchProductsFromDatabase:', error);
@@ -178,7 +182,7 @@ export const saveProduct = async (product: ProductSearchResult, categoryName: st
     }
 
     // Prepare product data
-    const productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
+    const productData = {
       name: product.name,
       brand: product.brand,
       price: product.price,
