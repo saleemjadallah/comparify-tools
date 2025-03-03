@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import ProductSearchResult from "./ProductSearchResult";
-import { mockProductDatabase } from "@/data/products";
 import { Tooltip } from "@/components/ui/tooltip";
 import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ComparisonRating from "./ComparisonRating";
+import { searchProducts, ProductSearchResult as SearchResultType } from "@/services/productService";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Product {
   id: string;
@@ -44,12 +45,14 @@ const ProductField = ({
   removeProduct,
   canRemove
 }: ProductFieldProps) => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResultType[]>([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     updateProductName(product.id, query);
     
@@ -59,29 +62,26 @@ const ProductField = ({
       return;
     }
 
-    // Filter products based on the query and selected category
-    const categoryProducts = mockProductDatabase[category as keyof typeof mockProductDatabase] || [];
-    const results = categoryProducts.filter(product => 
-      product.name.toLowerCase().includes(query.toLowerCase()) ||
-      product.brand.toLowerCase().includes(query.toLowerCase())
-    );
-
-    // Add mock rating and specs data for demo purposes
-    const enhancedResults = results.map(result => ({
-      ...result,
-      rating: Math.floor(Math.random() * 2) + 3 + Math.random(), // Random rating between 3.0 and 5.0
-      specs: {
-        "Color": ["Black", "Silver", "White"][Math.floor(Math.random() * 3)],
-        "Memory": ["4GB", "8GB", "16GB"][Math.floor(Math.random() * 3)],
-        "Storage": ["128GB", "256GB", "512GB"][Math.floor(Math.random() * 3)]
-      }
-    }));
-
-    setSearchResults(enhancedResults);
-    setShowSearchResults(enhancedResults.length > 0);
+    setIsSearching(true);
+    
+    try {
+      // Use our service to search for products
+      const results = await searchProducts(query, category);
+      setSearchResults(results);
+      setShowSearchResults(results.length > 0);
+    } catch (error) {
+      console.error("Error searching products:", error);
+      toast({
+        title: "Search Error",
+        description: "Failed to search for products. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const handleProductSelect = (selectedProduct: any) => {
+  const handleProductSelect = (selectedProduct: SearchResultType) => {
     selectProduct(selectedProduct, index);
     setShowSearchResults(false);
     setSearchQuery("");
@@ -105,7 +105,11 @@ const ProductField = ({
               className={`w-full pr-10 ${isFocused ? 'ring-2 ring-primary/30' : ''}`}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <Search className="h-4 w-4 text-muted-foreground" />
+              {isSearching ? (
+                <div className="animate-spin h-4 w-4 border-2 border-primary/50 rounded-full border-t-transparent" />
+              ) : (
+                <Search className="h-4 w-4 text-muted-foreground" />
+              )}
             </div>
           </div>
           

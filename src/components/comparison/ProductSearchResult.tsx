@@ -1,20 +1,10 @@
 
 import { cn } from "@/lib/utils";
 import ComparisonRating from "./ComparisonRating";
-
-interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  price: number;
-  rating?: number;
-  specs?: {
-    [key: string]: string;
-  };
-}
+import { ProductSearchResult as SearchResultType } from "@/services/productService";
 
 interface ProductSearchResultProps {
-  product: Product;
+  product: SearchResultType;
   onClick: () => void;
 }
 

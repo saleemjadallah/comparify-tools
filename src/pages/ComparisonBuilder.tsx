@@ -7,6 +7,7 @@ import CategoryStep from "@/components/comparison/CategoryStep";
 import ProductsStep from "@/components/comparison/ProductsStep";
 import FeaturesStep from "@/components/comparison/FeaturesStep";
 import NavigationButtons from "@/components/comparison/NavigationButtons";
+import { saveProduct, saveComparison } from "@/services/productService";
 
 const ComparisonBuilder = () => {
   const navigate = useNavigate();
@@ -104,21 +105,58 @@ const ComparisonBuilder = () => {
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     } else {
+      if (featureImportance.length === 0) {
+        toast({
+          title: "No features selected",
+          description: "Please select at least one feature for comparison.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Set loading state
       setIsGenerating(true);
       
       try {
-        // Simulate API call or processing time
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Save products to database
+        const productIds = await Promise.all(
+          products.map(async product => {
+            // Skip if no details
+            if (!product.details) {
+              return null;
+            }
+            
+            // Save product to database
+            const productId = await saveProduct(product.details, category);
+            if (!productId) {
+              throw new Error(`Failed to save product: ${product.name}`);
+            }
+            
+            return productId;
+          })
+        );
         
-        // Generate comparison ID and navigate
-        const comparisonId = crypto.randomUUID().slice(0, 8);
+        // Filter out null entries
+        const validProductIds = productIds.filter(Boolean) as string[];
+        
+        if (validProductIds.length < 2) {
+          throw new Error("Not enough valid products to create a comparison");
+        }
+        
+        // Save comparison to database
+        const comparisonId = await saveComparison(category, validProductIds, featureImportance);
+        
+        if (!comparisonId) {
+          throw new Error("Failed to create comparison");
+        }
+        
+        // Navigate to comparison page
         navigate(`/compare/${comparisonId}`);
       } catch (error) {
         console.error("Error generating comparison:", error);
         toast({
           title: "Error",
-          description: "There was a problem generating your comparison. Please try again.",
+          description: error instanceof Error ? error.message : "There was a problem generating your comparison. Please try again.",
           variant: "destructive",
         });
         // Reset loading state if there's an error
