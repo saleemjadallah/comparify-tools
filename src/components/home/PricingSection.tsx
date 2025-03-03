@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Check, Download, Zap, Users, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,7 +84,7 @@ const PriceCard = ({ plan, index }: PriceCardProps) => {
       
       <div className="relative bg-background rounded-lg p-6 h-full flex flex-col">
         {plan.popular && (
-          <div className="absolute -top-1 right-0 left-0 flex justify-center">
+          <div className="absolute top-0 right-0 left-0 flex justify-center">
             <span className="inline-flex items-center px-4 py-1.5 text-sm font-medium rounded-full bg-primary text-primary-foreground shadow-lg border-2 border-white">
               <Star className="h-3.5 w-3.5 mr-1 text-yellow-300 fill-yellow-300" />
               Most Popular
@@ -93,7 +92,7 @@ const PriceCard = ({ plan, index }: PriceCardProps) => {
           </div>
         )}
         
-        <div className="mb-4 mt-6">
+        <div className="mb-4 mt-8">
           <h3 className="text-xl font-bold">{plan.name}</h3>
           <p className="text-muted-foreground text-sm mt-1">{plan.description}</p>
         </div>
