@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -69,6 +68,15 @@ const Index = () => {
             >
               Make informed purchasing decisions with our comprehensive, data-driven
               product comparisons. See the differences that matter most.
+            </motion.p>
+            
+            <motion.p
+              className="mt-2 text-sm text-muted-foreground"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+            >
+              First comparison free / $18 after / Cancel anytime
             </motion.p>
 
             <motion.div
