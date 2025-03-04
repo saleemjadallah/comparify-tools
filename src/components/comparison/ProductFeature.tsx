@@ -1,5 +1,7 @@
 
 import { cn } from "@/lib/utils";
+import { FeatureRating } from "@/services/analysis/types";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductFeatureProps {
   feature: string;
@@ -15,6 +17,22 @@ const truncateText = (text: string, maxLength: number = 15) => {
 // Helper function to normalize feature names for comparison
 const normalizeFeatureName = (name: string): string => {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+};
+
+// Helper function to get confidence level color
+const getConfidenceColor = (confidence?: string): string => {
+  if (!confidence) return "bg-gray-200 text-gray-700";
+  
+  switch (confidence.toLowerCase()) {
+    case "high":
+      return "bg-green-100 text-green-800";
+    case "medium":
+      return "bg-yellow-100 text-yellow-800";
+    case "low":
+      return "bg-orange-100 text-orange-800";
+    default:
+      return "bg-gray-200 text-gray-700";
+  }
 };
 
 const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
@@ -164,8 +182,12 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
           // Use AI-generated rating if available, otherwise fall back to mock data
           const featureData = aiRating ? {
             rating: aiRating.rating,
-            description: aiRating.explanation
-          } : mockProductData;
+            description: aiRating.explanation,
+            confidence: aiRating.confidence || "medium"
+          } : mockProductData ? {
+            ...mockProductData,
+            confidence: "medium"
+          } : null;
           
           // If no data is available at all
           if (!featureData) {
@@ -187,6 +209,11 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
                 <div className="flex items-center">
                   <span className="font-semibold mr-1">{featureData.rating}</span>
                   <span className="text-sm text-muted-foreground">/10</span>
+                  {featureData.confidence && (
+                    <Badge variant="outline" className={cn("ml-2 text-xs", getConfidenceColor(featureData.confidence))}>
+                      {featureData.confidence}
+                    </Badge>
+                  )}
                 </div>
               </div>
               

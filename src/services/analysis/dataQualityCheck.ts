@@ -1,148 +1,105 @@
-
-import { toast } from "@/components/ui/use-toast";
-import { DataQualityError, ResponseParsingError } from "./errors";
+import { AnalysisResponse, ProductAnalysis } from "./types";
+import { ResponseParsingError } from "./errors";
 import { logger } from "./logging";
 
 /**
- * Checks the quality of product data and logs any issues
- * @throws DataQualityError if serious data issues are found
+ * Validates the completeness and correctness of analysis data returned from Claude
  */
-export const checkDataQuality = (productData: any[]): {
-  dataQualityIssues: boolean;
-  dataQualityWarnings: string[];
-  missingFeaturesCount: {total: number, byProduct: Record<string, number>};
-} => {
-  let dataQualityIssues = false;
-  const dataQualityWarnings = productData.map(product => {
-    const issues = [];
-    
-    if (!product.description || product.description.length < 50) {
-      issues.push(`Missing or very short description`);
-    }
-    
-    if (!product.features || product.features.length === 0) {
-      issues.push(`No feature bullets available`);
-    }
-    
-    if (!product.specs || Object.keys(product.specs).length < 3) {
-      issues.push(`Few or no specifications available`);
-    }
-    
-    if (issues.length > 0) {
-      dataQualityIssues = true;
-      return `"${product.name}": ${issues.join(', ')}`;
-    }
-    return null;
-  }).filter(Boolean);
+export const validateAndCompleteAnalysisData = (
+  data: any,
+  requestedFeatures: string[]
+): AnalysisResponse => {
+  logger.debug("Validating analysis data...");
   
-  if (dataQualityIssues) {
-    logger.warn('Data quality issues detected that may affect analysis quality', {
-      dataQualityWarnings,
-      productCount: productData.length
+  try {
+    // Check if the response has the expected structure
+    if (!data || !data.products || !Array.isArray(data.products)) {
+      throw new ResponseParsingError("Invalid response format: missing products array", {
+        receivedData: data ? Object.keys(data) : 'null'
+      });
+    }
+    
+    // Extract products from the response
+    const products: ProductAnalysis[] = data.products.map((product: any) => {
+      if (!product.name) {
+        throw new ResponseParsingError("Product missing name", { product });
+      }
+      
+      // Ensure all products have the required fields, with defaults if missing
+      return {
+        name: product.name,
+        overview: product.overview || "No overview available",
+        pros: product.pros || [],
+        cons: product.cons || [],
+        featureRatings: product.featureRatings || {}
+      };
     });
     
-    // Only throw a serious error if all products have serious issues
-    if (dataQualityWarnings.length === productData.length) {
-      throw new DataQualityError(
-        "Insufficient product data for meaningful analysis.", 
-        dataQualityWarnings
-      );
-    }
-  }
-
-  return {
-    dataQualityIssues,
-    dataQualityWarnings,
-    missingFeaturesCount: {total: 0, byProduct: {}}
-  };
-};
-
-/**
- * Validates analysis response data and fills in any missing features
- * @throws ResponseParsingError if the response format is invalid
- */
-export const validateAndCompleteAnalysisData = (analysisData: any, features: string[]) => {
-  const missingFeaturesCount = {total: 0, byProduct: {} as Record<string, number>};
-  
-  if (!analysisData || !analysisData.products || analysisData.products.length === 0) {
-    logger.error('Invalid response from Claude analysis function', null, { 
-      analysisData
+    // Ensure every product has ratings for all the requested features
+    products.forEach((product: ProductAnalysis) => {
+      requestedFeatures.forEach(feature => {
+        if (!product.featureRatings[feature]) {
+          logger.warn(`Feature rating missing for ${feature} in ${product.name}, creating default`);
+          product.featureRatings[feature] = {
+            rating: 5,
+            explanation: "No data available for this feature",
+            confidence: "low"
+          };
+        }
+      });
     });
     
+    // Return the validated data
+    return {
+      products,
+      personalizedRecommendations: data.personalizedRecommendations || [],
+      dataCompleteness: data.dataCompleteness || {
+        overallCompleteness: "unknown",
+        missingKeyData: [],
+        inferredData: []
+      }
+    };
+  } catch (error) {
+    if (error instanceof ResponseParsingError) {
+      throw error;
+    }
+    
+    // If it's another type of error, wrap it in a ResponseParsingError
     throw new ResponseParsingError(
-      "The AI service returned an invalid analysis format. Your comparison will be created without AI insights."
+      `Failed to validate analysis data: ${(error as Error).message}`,
+      { originalError: error }
     );
   }
+};
 
-  // Log analysis results summary
-  logger.info(`Successfully analyzed ${analysisData.products.length} products`, {
-    productNames: analysisData.products.map((p: any) => p.name)
+import { DataQualityError } from "./errors";
+
+/**
+ * Checks for data quality issues in product data before sending to Claude
+ */
+export const checkDataQuality = (products: any[]): void => {
+  const issues: string[] = [];
+
+  products.forEach(product => {
+    if (!product.description && (!product.rawData || !product.rawData.description)) {
+      issues.push(`Missing description for product: ${product.name}`);
+    }
+
+    if (Object.keys(product.specs).length === 0 &&
+        (!product.rawData || !product.rawData.specifications_flat || Object.keys(product.rawData.specifications_flat).length === 0)) {
+      issues.push(`Missing specifications for product: ${product.name}`);
+    }
+
+    if (product.features.length === 0 &&
+        (!product.rawData || !product.rawData.feature_bullets_flat || product.rawData.feature_bullets_flat.length === 0) &&
+        (!product.rich_product_description || product.rich_product_description.length === 0)) {
+      issues.push(`Missing features for product: ${product.name}`);
+    }
   });
 
-  // Validate each product has the expected structure and handle missing data
-  for (const product of analysisData.products) {
-    if (!product.name) {
-      logger.warn('Product in analysis is missing name', {
-        product
-      });
-      product.name = "Unknown Product";
-    }
-    
-    // Ensure featureRatings exists and has entries for our important features
-    if (!product.featureRatings) {
-      logger.warn(`Product "${product.name}" is missing featureRatings entirely`);
-      product.featureRatings = {};
-      missingFeaturesCount.total += features.length;
-      missingFeaturesCount.byProduct[product.name] = features.length;
-    }
-    
-    // Create empty ratings for any missing features
-    for (const feature of features) {
-      if (!product.featureRatings[feature]) {
-        logger.warn(`Feature "${feature}" is missing for product "${product.name}"`);
-        missingFeaturesCount.total++;
-        missingFeaturesCount.byProduct[product.name] = (missingFeaturesCount.byProduct[product.name] || 0) + 1;
-        
-        // Add a placeholder rating
-        product.featureRatings[feature] = {
-          rating: 5, // Default middle rating
-          explanation: "No analysis available for this feature."
-        };
-      }
-    }
-    
-    // Ensure other required fields exist
-    if (!product.overview) {
-      logger.warn(`Product "${product.name}" is missing overview`);
-      product.overview = "No product overview available.";
-    }
-    
-    if (!product.pros || !Array.isArray(product.pros) || product.pros.length === 0) {
-      logger.warn(`Product "${product.name}" is missing pros`);
-      product.pros = ["No pros analysis available."];
-    }
-    
-    if (!product.cons || !Array.isArray(product.cons) || product.cons.length === 0) {
-      logger.warn(`Product "${product.name}" is missing cons`);
-      product.cons = ["No cons analysis available."];
-    }
-  }
-  
-  // If we had to fill in too many missing features, warn the user
-  if (missingFeaturesCount.total > 0) {
-    logger.warn(`Had to create ${missingFeaturesCount.total} missing feature ratings`, {
-      missingFeaturesCount
+  if (issues.length > 0) {
+    throw new DataQualityError("Data quality issues found", {
+      dataIssues: issues
     });
-    
-    if (missingFeaturesCount.total > features.length) {
-      // Only show a toast if a significant number of features are missing
-      toast({
-        title: "Partial Analysis",
-        description: `Some product features couldn't be analyzed. The comparison may have limited insights.`,
-        variant: "destructive",
-      });
-    }
   }
-
-  return analysisData;
 };

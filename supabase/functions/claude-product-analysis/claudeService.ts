@@ -6,12 +6,17 @@ const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
  */
 function constructPrompt(productInfo: string, features: string[], category: string): string {
   return `I need you to analyze these ${category} products based on the features that are important to the user.
-
 PRODUCTS:
 ${productInfo}
-
 IMPORTANT FEATURES:
 ${features.join(', ')}
+
+When analyzing these products:
+- If specific data is unavailable for certain features, use the product description and your knowledge to make reasonable inferences, clearly marking these as "Inferred: [your analysis]"
+- For smartphones, extract details about processor, RAM, battery capacity, display quality, camera capabilities, and storage even if they're only mentioned in product descriptions
+- Look for indirect indicators of performance, battery life, or quality in user reviews or product descriptions
+- Pay special attention to marketing terms that indicate specifications (e.g., "Super Retina XDR" indicates high resolution OLED display)
+- For technical specifications not explicitly stated, provide estimated ranges based on the product's price tier and release date
 
 Please provide the following for each product:
 1. A brief overview of each product (2-3 sentences)
@@ -38,7 +43,8 @@ Format your response as JSON with the following structure:
       "featureRatings": {
         "Feature Name": {
           "rating": 8,
-          "explanation": "Why this feature got this rating"
+          "explanation": "Why this feature got this rating",
+          "confidence": "high/medium/low" // Add confidence level based on data availability
         }
       }
     }
@@ -52,7 +58,12 @@ Format your response as JSON with the following structure:
       "relevantTradeoffs": "What this user gives up by choosing this option",
       "recommendedAccessory": "A complementary product that would enhance the experience"
     }
-  ]
+  ],
+  "dataCompleteness": {
+    "overallCompleteness": "percentage or description of how complete the product data was",
+    "missingKeyData": ["List of important missing data points"],
+    "inferredData": ["List of features where information was inferred rather than explicitly stated"]
+  }
 }`;
 }
 
