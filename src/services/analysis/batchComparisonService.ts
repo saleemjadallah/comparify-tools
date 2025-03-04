@@ -644,12 +644,20 @@ const extractUniqueFeatures = (products: ProductSearchResult[]): string[] => {
   // This would be a more sophisticated NLP-based extraction in a real implementation
   // Simplified version for now
   
+  console.log('Extracting unique features from products');
   const allFeatures = new Set<string>();
   const featureCounts = new Map<string, number>();
   
   // Collect all features and count occurrences
   products.forEach(product => {
+    console.log(`Processing features for product: ${product.name}`);
     const productFeatures = product.features || [];
+    
+    if (productFeatures.length === 0) {
+      console.log(`No explicit features found for product: ${product.name}`);
+    } else {
+      console.log(`Found ${productFeatures.length} features for product: ${product.name}`);
+    }
     
     productFeatures.forEach(feature => {
       // Basic cleaning
@@ -661,10 +669,22 @@ const extractUniqueFeatures = (products: ProductSearchResult[]): string[] => {
     });
   });
   
+  console.log(`Total unique features found across all products: ${allFeatures.size}`);
+  
+  // Log all unique features with their counts
+  console.log('Feature frequency analysis:');
+  const featureFrequency = Array.from(featureCounts.entries())
+    .map(([feature, count]) => ({ feature, count }))
+    .sort((a, b) => b.count - a.count);
+  
+  console.log(featureFrequency.slice(0, 10)); // Log top 10 most common features
+  
   // Filter for unique features (those that appear only once)
   const uniqueFeatures = Array.from(allFeatures).filter(feature => {
     return featureCounts.get(feature) === 1;
   });
+  
+  console.log(`Found ${uniqueFeatures.length} truly unique features (appearing in only one product)`);
   
   // Convert back to original case and return
   return uniqueFeatures.map(feature => {
