@@ -99,15 +99,15 @@ const SpecificationParityTable = ({
                             {specValue.isSuperior && (
                               <CheckCircle2 
                                 className="ml-2 text-green-600" 
-                                size={16} 
-                                title="Superior specification" 
+                                size={16}
+                                aria-label="Superior specification"
                               />
                             )}
                             {specValue.isMarketing && (
                               <AlertCircle 
                                 className="ml-2 text-amber-500" 
-                                size={16} 
-                                title="Marketing term rather than technical specification" 
+                                size={16}
+                                aria-label="Marketing term rather than technical specification"
                               />
                             )}
                           </div>

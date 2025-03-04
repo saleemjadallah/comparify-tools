@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getComparison } from "@/services/productService";
-import { BatchComparisonAnalysis } from "@/services/analysis/comparisonAnalysisTypes";
+import { BatchComparisonAnalysis as BatchAnalysisType } from "@/services/analysis/comparisonAnalysisTypes";
 import { generateAndSaveBatchAnalysis, getBatchAnalysis } from "@/services/analysis/generateBatchAnalysis";
 
 // Import our components
@@ -16,14 +16,14 @@ import AnalysisStatusAlert from "@/components/comparison/AnalysisStatusAlert";
 import ProductOverviewSection from "@/components/comparison/ProductOverviewSection";
 import KeyFeaturesSection from "@/components/comparison/KeyFeaturesSection";
 import SpecificationsSection from "@/components/comparison/SpecificationsSection";
-import BatchComparisonAnalysis from "@/components/comparison/BatchComparisonAnalysis";
+import BatchComparisonAnalysisComponent from "@/components/comparison/BatchComparisonAnalysis";
 
 const ComparisonPage = () => {
   const { comparisonId } = useParams();
   const { toast } = useToast();
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [batchAnalysis, setBatchAnalysis] = useState<BatchComparisonAnalysis | null>(null);
+  const [batchAnalysis, setBatchAnalysis] = useState<BatchAnalysisType | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const fetchComparisonData = async () => {
@@ -197,7 +197,7 @@ const ComparisonPage = () => {
                 {analysisLoading ? "Generating..." : "Regenerate Analysis"}
               </Button>
             </div>
-            <BatchComparisonAnalysis 
+            <BatchComparisonAnalysisComponent 
               analysis={batchAnalysis} 
               products={comparisonData.products} 
             />

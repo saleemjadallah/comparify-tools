@@ -27,6 +27,35 @@ export type Database = {
         }
         Relationships: []
       }
+      comparison_analyses: {
+        Row: {
+          analysis_data: Json
+          comparison_id: string
+          created_at: string | null
+          id: number
+        }
+        Insert: {
+          analysis_data: Json
+          comparison_id: string
+          created_at?: string | null
+          id?: number
+        }
+        Update: {
+          analysis_data?: Json
+          comparison_id?: string
+          created_at?: string | null
+          id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparison_analyses_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: true
+            referencedRelation: "comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comparison_products: {
         Row: {
           comparison_id: string
