@@ -8,6 +8,12 @@ interface ProductOverviewSectionProps {
   products: any[];
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 20) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ProductOverviewSection = ({ products }: ProductOverviewSectionProps) => {
   return (
     <SectionContainer title="Overview">
@@ -16,8 +22,8 @@ const ProductOverviewSection = ({ products }: ProductOverviewSectionProps) => {
           <div key={product.id} className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold">{product.name}</h3>
-                <div className="text-muted-foreground">{product.brand}</div>
+                <h3 className="text-xl font-semibold">{truncateText(product.name, 20)}</h3>
+                <div className="text-muted-foreground">{truncateText(product.brand, 15)}</div>
               </div>
               <div className="text-lg font-bold">${product.price}</div>
             </div>

@@ -6,6 +6,12 @@ interface ProductFeatureProps {
   products: any[];
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 15) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -112,7 +118,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
           return (
             <div key={product.id} className="p-6">
               <div className="flex items-center justify-between mb-3">
-                <div className="font-medium">{product.name}</div>
+                <div className="font-medium">{truncateText(product.name, 20)}</div>
                 <div className="flex items-center">
                   <span className="font-semibold mr-1">{featureData.rating}</span>
                   <span className="text-sm text-muted-foreground">/10</span>

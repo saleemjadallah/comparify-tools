@@ -15,14 +15,21 @@ export const generateAndSaveBatchAnalysis = async (
 ): Promise<BatchComparisonAnalysis | null> => {
   try {
     console.log('Starting batch analysis generation for:', category);
-    console.log('Products to analyze:', products.map(p => p.name));
+    
+    // Add truncated product names for logging
+    const truncateText = (text: string, maxLength: number = 15) => {
+      if (!text) return "";
+      return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+    };
+    
+    console.log('Products to analyze:', products.map(p => truncateText(p.name)));
     
     // Log sample product data to see what's available
     if (products.length > 0) {
       const sampleProduct = products[0];
       console.log('Sample product data:', {
         id: sampleProduct.id,
-        name: sampleProduct.name,
+        name: truncateText(sampleProduct.name),
         features: sampleProduct.features,
         specs: sampleProduct.specs ? Object.keys(sampleProduct.specs) : 'No specs',
         enhancedSpecs: sampleProduct.enhancedSpecs ? Object.keys(sampleProduct.enhancedSpecs) : 'No enhanced specs',
@@ -47,6 +54,7 @@ export const generateAndSaveBatchAnalysis = async (
         isUnique: f.isUnique,
         presenceData: Object.entries(f.presence).map(([id, data]) => ({
           productId: id,
+          productName: truncateText(products.find(p => p.id === id)?.name || 'Unknown'),
           present: data.present,
           rating: data.qualityRating
         }))

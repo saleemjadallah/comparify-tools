@@ -11,6 +11,12 @@ interface FeatureMatrixProps {
   productNames: string[];
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 15) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const FeatureMatrix = ({ 
   featureMatrix, 
   productIds,
@@ -35,7 +41,7 @@ const FeatureMatrix = ({
               </th>
               {productNames.map((name, index) => (
                 <th key={index} className="py-4 px-6 text-center font-semibold">
-                  {name}
+                  {truncateText(name, 15)}
                 </th>
               ))}
             </tr>

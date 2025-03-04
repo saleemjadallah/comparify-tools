@@ -14,6 +14,12 @@ interface BatchComparisonAnalysisProps {
   products: any[];
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 15) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const BatchComparisonAnalysis = ({ 
   analysis, 
   products 
@@ -28,7 +34,7 @@ const BatchComparisonAnalysis = ({
 
   // Extract product IDs and names for components
   const productIds = products.map(product => product.id);
-  const productNames = products.map(product => product.name);
+  const productNames = products.map(product => truncateText(product.name, 15));
   
   return (
     <div className="space-y-8">
@@ -57,7 +63,7 @@ const BatchComparisonAnalysis = ({
                   <Badge>{winner.advantageSignificance}/5</Badge>
                 </div>
                 <div className="text-lg font-medium mb-2">
-                  {winningProduct.name}
+                  {truncateText(winningProduct.name, 20)}
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   {winner.reasoning}
@@ -103,7 +109,7 @@ const BatchComparisonAnalysis = ({
             return (
               <div key={recommendation.recommendationType} className="bg-white rounded-xl shadow-sm border p-6">
                 <h3 className="text-lg font-semibold mb-2">{recommendation.recommendationType}</h3>
-                <div className="font-medium mb-2">{recommendedProduct.name}</div>
+                <div className="font-medium mb-2">{truncateText(recommendedProduct.name, 20)}</div>
                 <p className="text-muted-foreground">{recommendation.reasoning}</p>
               </div>
             );

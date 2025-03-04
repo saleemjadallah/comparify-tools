@@ -8,6 +8,12 @@ interface ComparativeOverviewProps {
   overview: ComparativeOverviewType;
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 15) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ComparativeOverview = ({ overview }: ComparativeOverviewProps) => {
   if (!overview || !overview.items || overview.items.length === 0) {
     return null;
@@ -20,14 +26,14 @@ const ComparativeOverview = ({ overview }: ComparativeOverviewProps) => {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <CardTitle className="text-lg font-semibold leading-tight">
-                {item.productName}
+                {truncateText(item.productName, 20)}
               </CardTitle>
               <Badge className="ml-2" variant={getVerdictVariant(item.quickVerdict)}>
                 {item.quickVerdict}
               </Badge>
             </div>
             <div className="text-sm text-muted-foreground">
-              {item.model && <div>{item.model}</div>}
+              {item.model && <div>{truncateText(item.model, 25)}</div>}
             </div>
           </CardHeader>
           <CardContent>

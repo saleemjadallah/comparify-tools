@@ -8,6 +8,12 @@ interface ComparisonTableProps {
   products: ProductSearchResult[];
 }
 
+// Helper function to truncate text
+const truncateText = (text: string, maxLength: number = 15) => {
+  if (!text) return "";
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+};
+
 const ComparisonTable = ({ products }: ComparisonTableProps) => {
   if (!products || products.length === 0) return null;
   
@@ -87,7 +93,7 @@ const ComparisonTable = ({ products }: ComparisonTableProps) => {
                   </th>
                   {products.map((product) => (
                     <th key={product.id} className="py-4 px-6 text-left font-semibold">
-                      {product.name}
+                      {truncateText(product.name, 15)}
                     </th>
                   ))}
                 </tr>
