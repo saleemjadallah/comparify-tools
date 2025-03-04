@@ -1,8 +1,12 @@
 
+import { logger } from "./logging";
+
 /**
  * Prepares product data for analysis, ensuring required fields are present
  */
 export const prepareProductData = (products: any[]): any[] => {
+  logger.info(`Preparing ${products.length} products for analysis`);
+  
   return products.map(product => {
     // Create a base product object with essential fields
     const productInfo = {
@@ -37,23 +41,28 @@ export const prepareProductData = (products: any[]): any[] => {
  * Logs prepared product data for debugging
  */
 const logProductData = (product: any, productInfo: any): void => {
-  console.log(`Prepared data for "${product.name}" with the following key information:`);
-  console.log(`- Brand: ${productInfo.brand}`);
-  console.log(`- Specifications count: ${Object.keys(productInfo.specs).length}`);
-  console.log(`- Description available: ${productInfo.description ? 'Yes' : 'No'}`);
-  console.log(`- Feature bullets count: ${productInfo.features.length}`);
+  const hasDescription = !!productInfo.description;
+  const specCount = Object.keys(productInfo.specs).length;
+  const featureCount = productInfo.features.length;
   
-  if (product.description) {
-    console.log(`- Description excerpt: ${product.description.substring(0, 100)}...`);
-  } else {
-    console.warn(`- No description available for "${product.name}"`);
+  logger.debug(`Prepared data for "${product.name}"`, {
+    brand: productInfo.brand,
+    specCount,
+    hasDescription,
+    featureCount,
+    descriptionExcerpt: hasDescription ? productInfo.description.substring(0, 100) + '...' : 'N/A'
+  });
+  
+  // Log any data quality concerns
+  if (!hasDescription) {
+    logger.warn(`No description available for "${product.name}"`);
   }
   
-  if (productInfo.features.length === 0) {
-    console.warn(`- No feature bullets available for "${product.name}"`);
+  if (featureCount === 0) {
+    logger.warn(`No feature bullets available for "${product.name}"`);
   }
   
-  if (Object.keys(productInfo.specs).length === 0) {
-    console.warn(`- No specifications available for "${product.name}"`);
+  if (specCount === 0) {
+    logger.warn(`No specifications available for "${product.name}"`);
   }
 };

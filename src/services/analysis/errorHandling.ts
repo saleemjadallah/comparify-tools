@@ -1,36 +1,58 @@
 
 import { toast } from "@/components/ui/use-toast";
+import { 
+  ServiceConnectionError, 
+  ResponseParsingError, 
+  TimeoutError,
+  getUserFriendlyErrorMessage
+} from "./errors";
+import { logger } from "./logging";
 
 /**
  * Handles errors from Claude analysis function call
  * Returns descriptive error messages based on error type
  */
 export const handleClaudeError = (error: any): null => {
-  console.error('Error calling Claude analysis function:', error);
-  
-  // Provide more detailed error messages based on error type
-  let errorMessage = "Could not analyze products.";
-  let errorDetail = "";
+  // Create a more specific error based on the type of error encountered
+  let specificError: Error;
   
   if (error.message?.includes("non-2xx status code")) {
-    errorMessage = "AI service unavailable";
-    errorDetail = "The AI service is currently unavailable or overloaded. Your comparison will be created without AI analysis.";
+    specificError = new ServiceConnectionError(
+      "The AI service is currently unavailable or overloaded. Your comparison will be created without AI analysis.",
+      "Claude API",
+      error.status
+    );
   } else if (error.message?.includes("Failed to fetch")) {
-    errorMessage = "Network error";
-    errorDetail = "Could not connect to the AI service. Please check your internet connection and try again.";
+    specificError = new ServiceConnectionError(
+      "Could not connect to the AI service. Please check your internet connection and try again.",
+      "Claude API"
+    );
   } else if (error.message?.includes("timeout")) {
-    errorMessage = "Request timeout";
-    errorDetail = "The AI analysis took too long to complete. Your comparison will be created without AI analysis.";
+    specificError = new TimeoutError(
+      "The AI analysis took too long to complete. Your comparison will be created without AI analysis."
+    );
   } else if (error.message?.includes("quota")) {
-    errorMessage = "Service quota exceeded";
-    errorDetail = "The AI service usage limit has been reached. Your comparison will be created without AI analysis.";
+    specificError = new ServiceConnectionError(
+      "The AI service usage limit has been reached. Your comparison will be created without AI analysis.",
+      "Claude API"
+    );
+  } else {
+    specificError = new ServiceConnectionError(
+      error.message || "Could not analyze products.",
+      "Claude API"
+    );
   }
   
-  toast({
-    title: errorMessage,
-    description: errorDetail || error.message,
-    variant: "destructive",
+  // Log the error with contextual information
+  logger.error(`Claude analysis error: ${specificError.message}`, error, {
+    errorType: specificError.name,
+    originalMessage: error.message
   });
+  
+  // Show user friendly toast
+  const { title, description, variant } = getUserFriendlyErrorMessage(specificError);
+  toast({ title, description, variant });
+  
   return null;
 };
 
@@ -38,12 +60,15 @@ export const handleClaudeError = (error: any): null => {
  * Handles empty or invalid response data
  */
 export const handleEmptyResponse = (): null => {
-  console.error('Empty response from Claude analysis function');
-  toast({
-    title: "Analysis Unavailable",
-    description: "Received empty response from the AI service. Your comparison will be created without AI analysis.",
-    variant: "destructive",
-  });
+  const error = new ResponseParsingError(
+    "Received empty response from the AI service. Your comparison will be created without AI analysis."
+  );
+  
+  logger.error('Empty response from Claude analysis function', error);
+  
+  const { title, description, variant } = getUserFriendlyErrorMessage(error);
+  toast({ title, description, variant });
+  
   return null;
 };
 
@@ -51,13 +76,18 @@ export const handleEmptyResponse = (): null => {
  * Handles unexpected errors in the analysis process
  */
 export const handleUnexpectedError = (error: unknown): null => {
-  console.error('Unexpected error in analyzeProducts:', error);
-  toast({
-    title: "Analysis Error",
-    description: error instanceof Error 
-      ? `An unexpected error occurred: ${error.message}` 
-      : "An unknown error occurred while analyzing the products. Your comparison will be created without AI analysis.",
-    variant: "destructive",
+  // Convert to standard Error if it's not already
+  const standardError = error instanceof Error 
+    ? error 
+    : new Error(typeof error === 'string' ? error : 'Unknown error');
+  
+  logger.error('Unexpected error in analyzeProducts', standardError, {
+    errorStack: standardError.stack
   });
+  
+  // Show appropriate message to user
+  const { title, description, variant } = getUserFriendlyErrorMessage(standardError);
+  toast({ title, description, variant });
+  
   return null;
 };

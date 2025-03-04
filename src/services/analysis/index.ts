@@ -6,3 +6,5 @@ export * from './validation';
 export * from './productDataPrep';
 export * from './dataQualityCheck';
 export * from './errorHandling';
+export * from './logging';
+export * from './errors';

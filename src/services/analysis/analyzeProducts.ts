@@ -1,10 +1,17 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { AnalysisResponse } from "./types";
-import { validateProductCount, validateFeatures, logAnalysisStart } from "./validation";
+import { validateProductCount, validateFeatures } from "./validation";
 import { prepareProductData } from "./productDataPrep";
 import { checkDataQuality, validateAndCompleteAnalysisData } from "./dataQualityCheck";
 import { handleClaudeError, handleEmptyResponse, handleUnexpectedError } from "./errorHandling";
+import { logger, logAnalysisStart, logAnalysisCompletion } from "./logging";
+import { 
+  ServiceConnectionError, 
+  ResponseParsingError, 
+  DataQualityError, 
+  ValidationError 
+} from "./errors";
 
 /**
  * Analyzes products using Claude AI based on important features
@@ -14,6 +21,8 @@ export const analyzeProducts = async (
   features: string[],
   category: string
 ): Promise<AnalysisResponse | null> => {
+  const startTime = Date.now();
+  
   try {
     // Validate inputs
     if (!validateProductCount(products)) return null;
@@ -25,12 +34,22 @@ export const analyzeProducts = async (
     // Prepare product data for Claude
     const productData = prepareProductData(products);
 
-    // Check data quality
-    checkDataQuality(productData);
+    // Check data quality (will throw error if serious issues are found)
+    try {
+      checkDataQuality(productData);
+    } catch (error) {
+      if (error instanceof DataQualityError) {
+        logger.error("Data quality check failed", error, {
+          issues: error.dataIssues
+        });
+        return null;
+      }
+      throw error; // Re-throw if it's not a data quality error
+    }
 
-    console.log('Calling Claude analysis function via Supabase Edge Function...');
+    logger.info('Calling Claude analysis function via Supabase Edge Function...');
     
-    // Call the Supabase Edge Function
+    // Call the Supabase Edge Function with timeout handling
     const { data, error } = await supabase.functions.invoke('claude-product-analysis', {
       body: JSON.stringify({
         products: productData,
@@ -48,10 +67,30 @@ export const analyzeProducts = async (
       return handleEmptyResponse();
     }
 
-    console.log('Received Claude analysis response with structure:', Object.keys(data));
+    logger.info('Received Claude analysis response', { 
+      responseStructure: Object.keys(data)
+    });
 
     // Validate and complete the response data
-    return validateAndCompleteAnalysisData(data, features);
+    try {
+      const validatedData = validateAndCompleteAnalysisData(data, features);
+      
+      // Log completion
+      const endTime = Date.now();
+      logAnalysisCompletion(
+        validatedData.products.length, 
+        features.length,
+        endTime - startTime
+      );
+      
+      return validatedData;
+    } catch (error) {
+      if (error instanceof ResponseParsingError) {
+        logger.error("Response validation failed", error);
+        return null;
+      }
+      throw error; // Re-throw if it's not a response parsing error
+    }
     
   } catch (error) {
     return handleUnexpectedError(error);
