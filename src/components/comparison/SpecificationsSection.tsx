@@ -9,7 +9,10 @@ interface SpecificationsSectionProps {
 
 const SpecificationsSection = ({ products }: SpecificationsSectionProps) => {
   return (
-    <SectionContainer title="Specifications">
+    <SectionContainer title="Detailed Specifications">
+      <p className="text-muted-foreground mb-4">
+        Compare detailed technical specifications across products. Use the tabs to view specifications by category.
+      </p>
       <ComparisonTable products={products} />
     </SectionContainer>
   );

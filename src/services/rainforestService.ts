@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ProductSearchResult } from "./types";
+import { enhancedSpecProcessing, flattenEnhancedSpecs } from "@/utils/enhancedSpecProcessing";
 
 // Function to search products using the Rainforest API (via our Edge Function)
 export const searchProductsFromRainforest = async (
@@ -44,19 +44,36 @@ export const searchProductsFromRainforest = async (
       console.log('Sample top reviews:', data.results[0].top_reviews);
     }
 
-    // Transform the results to match our ProductSearchResult interface
-    return data.results.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      brand: item.brand || '',
-      price: item.price || 0,
-      category: categoryName,
-      rating: item.rating,
-      specs: item.specs || {},
-      imageUrl: item.imageUrl || '',
-      description: item.description || '',
-      rich_product_description: item.rich_product_description || [],
-    }));
+    // Transform the results using our enhanced spec processor
+    return data.results.map((item: any) => {
+      // Process the specs with our enhanced processing system
+      const enhancedSpecs = enhancedSpecProcessing(item, categoryName);
+      
+      // Flatten the enhanced specs for storage compatibility
+      const flattenedSpecs = flattenEnhancedSpecs(enhancedSpecs);
+      
+      return {
+        id: item.id,
+        name: item.name,
+        brand: item.brand || '',
+        price: item.price || 0,
+        category: categoryName,
+        rating: item.rating,
+        specs: flattenedSpecs, // Use our enhanced and flattened specs
+        imageUrl: item.imageUrl || '',
+        description: item.description || '',
+        rich_product_description: item.rich_product_description || [],
+        // Keep the original detailed data too
+        specifications: item.specifications || [],
+        features: item.features || [],
+        top_reviews: item.top_reviews || [],
+        images: item.images || [],
+        similar_products: item.similar_products || [],
+        variants: item.variants || [],
+        // Add the enhanced specs as a separate property for future use
+        enhancedSpecs: enhancedSpecs
+      };
+    });
   } catch (error) {
     console.error('Exception in searchProductsFromRainforest:', error);
     return [];
