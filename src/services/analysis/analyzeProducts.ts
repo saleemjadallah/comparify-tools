@@ -36,7 +36,12 @@ export const analyzeProducts = async (
 
     // Check data quality (will throw error if serious issues are found)
     try {
-      checkDataQuality(productData);
+      const qualityCheck = checkDataQuality(productData);
+      if (qualityCheck.dataQualityIssues) {
+        logger.warn("Data quality issues detected", {
+          warnings: qualityCheck.dataQualityWarnings
+        });
+      }
     } catch (error) {
       if (error instanceof DataQualityError) {
         logger.error("Data quality check failed", error, {
