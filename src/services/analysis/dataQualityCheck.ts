@@ -1,5 +1,6 @@
+
 import { AnalysisResponse, ProductAnalysis } from "./types";
-import { ResponseParsingError } from "./errors";
+import { ResponseParsingError, DataQualityError } from "./errors";
 import { logger } from "./logging";
 
 /**
@@ -71,8 +72,6 @@ export const validateAndCompleteAnalysisData = (
     );
   }
 };
-
-import { DataQualityError } from "./errors";
 
 /**
  * Checks for data quality issues in product data before sending to Claude
