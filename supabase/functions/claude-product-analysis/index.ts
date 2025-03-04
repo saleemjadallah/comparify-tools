@@ -71,6 +71,13 @@ Please provide the following for each product:
 4. A rating score (1-10) for each of the important features listed above
 5. A brief explanation of the feature ratings (1-2 sentences each)
 
+Additionally, provide personalized recommendations for different user types. For each recommendation:
+1. Identify a specific user persona or use case (e.g., "Budget-conscious professional", "Creative professional", "Gamer", etc.)
+2. Explain in detail (3-5 sentences) why the recommended product is ideal for this persona, going beyond just mentioning "good balance of features, performance, and price"
+3. Highlight the specific standout features that make this product appropriate for this user persona
+4. Explain any trade-offs this persona might be making with this choice
+5. Suggest one key accessory or complementary product that would enhance the experience for this specific user type
+
 Format your response as JSON with the following structure:
 {
   "products": [
@@ -85,6 +92,16 @@ Format your response as JSON with the following structure:
           "explanation": "Why this feature got this rating"
         }
       }
+    }
+  ],
+  "personalizedRecommendations": [
+    {
+      "productId": "product-id",
+      "recommendationType": "User Persona (e.g., Budget Professional)",
+      "reasoning": "Detailed explanation why this product is best for this persona with specific examples of how the features meet their needs. Include specific price-to-performance benefits or unique capabilities that matter to this user type.",
+      "standoutFeatures": ["Feature 1", "Feature 2"],
+      "relevantTradeoffs": "What this user gives up by choosing this option",
+      "recommendedAccessory": "A complementary product that would enhance the experience"
     }
   ]
 }`;
@@ -109,7 +126,7 @@ Format your response as JSON with the following structure:
             content: prompt
           }
         ],
-        system: "You are a product comparison expert. Provide factual, honest analysis based only on the information given. Format your entire response as valid JSON with no extra text. Focus on technical merits rather than marketing claims."
+        system: "You are a product comparison expert with deep knowledge of consumer electronics and technology. Provide detailed, nuanced analysis based only on the information given, highlighting meaningful differences between products rather than superficial distinctions. Format your entire response as valid JSON with no extra text. Your analysis should be specific and actionable, helping users make informed purchasing decisions based on their unique needs. Avoid vague statements like 'good balance of features, performance, and price' - instead, explain precisely what makes each recommendation appropriate with concrete examples."
       }),
     });
 
@@ -168,6 +185,14 @@ Format your response as JSON with the following structure:
               }
             ])
           )
+        })),
+        personalizedRecommendations: products.map((product: any, index: number) => ({
+          productId: product.id,
+          recommendationType: [`Budget-conscious user`, `Professional user`, `High-end enthusiast`][index % 3],
+          reasoning: `This product provides an exceptional combination of performance in ${features[0]} and affordability, making it perfect for users who need reliability without breaking the bank. The ${features[1]} capability is particularly impressive given the price point, and users will appreciate the intuitive interface that requires minimal setup time.`,
+          standoutFeatures: [features[index % features.length], features[(index + 1) % features.length]],
+          relevantTradeoffs: `Users choosing this product may sacrifice some advanced ${features[2]} capabilities found in premium alternatives, but the core functionality remains excellent.`,
+          recommendedAccessory: `A protective case would complement this ${category} well, enhancing durability for daily use.`
         }))
       };
     }
