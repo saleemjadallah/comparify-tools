@@ -1,4 +1,3 @@
-
 import { Json } from "@/integrations/supabase/types";
 
 export interface ProductSearchResult {
@@ -19,6 +18,8 @@ export interface ProductSearchResult {
   images?: string[];
   similar_products?: any[];
   variants?: any[];
+  // Added enhancedSpecs property
+  enhancedSpecs?: any;
 }
 
 // Define types for Supabase tables to help TypeScript
