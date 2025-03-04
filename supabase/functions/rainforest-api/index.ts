@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
     })
 
     console.log(`Searching Rainforest API for: ${searchQuery} in category ${categoryName}`)
+    console.log(`Search parameters: ${JSON.stringify(Object.fromEntries(searchParams))}`)
     
     // Make the initial search request to Rainforest API
     const searchResponse = await fetch(`${apiUrl}?${searchParams.toString()}`)
@@ -61,6 +62,7 @@ Deno.serve(async (req) => {
     }
     
     const searchData = await searchResponse.json()
+    console.log(`Search results count: ${searchData.search_results?.length || 0}`)
     
     // Extract ASINs from search results (limit to top N results)
     const asins = searchData.search_results
@@ -68,7 +70,7 @@ Deno.serve(async (req) => {
       .map((item: any) => item.asin)
       .filter((asin: string) => asin) // Filter out any undefined ASINs
     
-    console.log(`Found ${asins.length} products, fetching detailed information`)
+    console.log(`Found ${asins.length} products with ASINs: ${asins.join(', ')}`)
     
     // Fetch detailed product data for each ASIN
     const productDetailsPromises = asins.map(async (asin: string) => {
@@ -86,6 +88,8 @@ Deno.serve(async (req) => {
         include_similar_products: 'true'
       })
       
+      console.log(`Fetching details for ASIN ${asin} with params: ${JSON.stringify(Object.fromEntries(productParams))}`)
+      
       const productResponse = await fetch(`${apiUrl}?${productParams.toString()}`)
       
       if (!productResponse.ok) {
@@ -93,7 +97,13 @@ Deno.serve(async (req) => {
         return null
       }
       
-      return await productResponse.json()
+      const productData = await productResponse.json()
+      console.log(`Retrieved product data for ASIN ${asin}: ${productData.product?.title || 'Unknown'}`)
+      console.log(`Features count: ${productData.product?.features?.length || 0}`)
+      console.log(`Specifications groups count: ${productData.product?.specifications?.length || 0}`)
+      console.log(`Reviews count: ${productData.product?.top_reviews?.length || 0}`)
+      
+      return productData
     })
     
     // Wait for all product detail requests to complete
@@ -103,29 +113,40 @@ Deno.serve(async (req) => {
     const productDetails = productDetailsResults.filter(result => result !== null)
     
     // Transform the detailed product data
-    const transformedResults = productDetails.map((data: any) => ({
-      id: data.product.asin || `rainforest-${crypto.randomUUID()}`,
-      name: data.product.title || 'Unknown Product',
-      brand: data.product.brand || '',
-      price: data.product.buybox_winner?.price?.value || 0,
-      currency: data.product.buybox_winner?.price?.currency || 'USD',
-      category: categoryName,
-      rating: data.product.rating,
-      total_reviews: data.product.ratings_total,
-      specs: transformRainforestSpecs(data.product),
-      imageUrl: data.product.main_image?.link || '',
-      images: (data.product.images || []).map((img: any) => img.link),
-      source: 'rainforest',
-      source_id: data.product.asin || '',
-      description: data.product.description || '',
-      rich_product_description: extractRichProductDescription(data.product),
-      specifications: data.product.specifications || [],
-      features: data.product.features || [],
-      top_reviews: extractTopReviews(data.product),
-      pricing_context: data.product.pricing_context || {},
-      similar_products: (data.product.similar_products || []).slice(0, 5),
-      variants: data.product.variants || []
-    }))
+    const transformedResults = productDetails.map((data: any) => {
+      const transformedResult = {
+        id: data.product.asin || `rainforest-${crypto.randomUUID()}`,
+        name: data.product.title || 'Unknown Product',
+        brand: data.product.brand || '',
+        price: data.product.buybox_winner?.price?.value || 0,
+        currency: data.product.buybox_winner?.price?.currency || 'USD',
+        category: categoryName,
+        rating: data.product.rating,
+        total_reviews: data.product.ratings_total,
+        specs: transformRainforestSpecs(data.product),
+        imageUrl: data.product.main_image?.link || '',
+        images: (data.product.images || []).map((img: any) => img.link),
+        source: 'rainforest',
+        source_id: data.product.asin || '',
+        description: data.product.description || '',
+        rich_product_description: extractRichProductDescription(data.product),
+        specifications: data.product.specifications || [],
+        features: data.product.features || [],
+        top_reviews: extractTopReviews(data.product),
+        pricing_context: data.product.pricing_context || {},
+        similar_products: (data.product.similar_products || []).slice(0, 5),
+        variants: data.product.variants || []
+      };
+      
+      // Enhanced logging for each product's extracted data
+      console.log(`Transformed product ${transformedResult.id}: ${transformedResult.name} (${transformedResult.brand})`);
+      console.log(`  - Specifications count: ${Object.keys(transformedResult.specs).length}`);
+      console.log(`  - Features count: ${transformedResult.features.length}`);
+      console.log(`  - Rich description paragraphs: ${transformedResult.rich_product_description.length}`);
+      console.log(`  - Reviews count: ${transformedResult.top_reviews.length}`);
+      
+      return transformedResult;
+    })
 
     // Return the transformed results
     return new Response(JSON.stringify({ results: transformedResults }), {
@@ -234,6 +255,9 @@ function transformRainforestSpecs(product: any): Record<string, string> {
       }
     })
   }
+  
+  // Log specifications structure for debugging
+  console.log(`Extracted ${Object.keys(specs).length} specs for product`);
   
   return specs
 }
