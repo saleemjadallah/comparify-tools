@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BatchComparisonAnalysis } from "./comparisonAnalysisTypes";
 import { generateBatchComparisonAnalysis } from "./batchComparisonService";
 import { ProductSearchResult } from "../types";
+import { Json } from "@/integrations/supabase/types";
 
 /**
  * Generates and saves a batch comparison analysis
@@ -25,7 +26,7 @@ export const generateAndSaveBatchAnalysis = async (
       .from('comparison_analyses')
       .upsert({
         comparison_id: comparisonId,
-        analysis_data: analysis,
+        analysis_data: analysis as unknown as Json, // Cast to Json type for Supabase
         created_at: new Date().toISOString()
       });
     
@@ -51,14 +52,19 @@ export const getBatchAnalysis = async (
       .from('comparison_analyses')
       .select('analysis_data')
       .eq('comparison_id', comparisonId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching batch analysis:', error);
       return null;
     }
     
-    return data?.analysis_data as BatchComparisonAnalysis;
+    if (!data) {
+      return null;
+    }
+    
+    // Cast the data to BatchComparisonAnalysis type with proper type assertion
+    return data.analysis_data as unknown as BatchComparisonAnalysis;
   } catch (error) {
     console.error('Error retrieving batch analysis:', error);
     return null;
