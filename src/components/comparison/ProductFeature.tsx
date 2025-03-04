@@ -12,6 +12,11 @@ const truncateText = (text: string, maxLength: number = 15) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
+// Helper function to normalize feature names for comparison
+const normalizeFeatureName = (name: string): string => {
+  return name.toLowerCase().replace(/\s+/g, '').trim();
+};
+
 const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -24,11 +29,49 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
           // Check if we have AI-generated feature ratings from specs.featureRatings
           const featureRatings = product.specs?.featureRatings || {};
           
-          // Try to get the rating for this specific feature
-          // Note: the feature key in the DB might be formatted differently than the UI
-          const aiRating = featureRatings[feature] || 
-                           featureRatings[feature.toLowerCase()] || 
-                           featureRatings[feature.replace(/\s+/g, '')];
+          // Normalize current feature name
+          const normalizedFeature = normalizeFeatureName(feature);
+          
+          // Try to get the rating for this specific feature with improved matching
+          let aiRating = null;
+          
+          // Log the available feature ratings for debugging
+          if (Object.keys(featureRatings).length > 0) {
+            console.log(`Available feature ratings for ${product.name}:`, Object.keys(featureRatings));
+          } else {
+            console.log(`No feature ratings found for ${product.name}`);
+          }
+          
+          // Try different formats of the feature name to find a match
+          const possibleFeatureKeys = [
+            feature,                                    // Exact match
+            feature.toLowerCase(),                      // Lowercase
+            normalizedFeature,                          // Normalized (lowercase, no spaces)
+            feature.replace(/\s+/g, ''),                // No spaces
+            feature.replace(/[^a-zA-Z0-9]/g, '')        // Alphanumeric only
+          ];
+          
+          // Try each possible key format
+          for (const key of possibleFeatureKeys) {
+            if (featureRatings[key]) {
+              aiRating = featureRatings[key];
+              console.log(`Found match for "${feature}" using key "${key}" in ${product.name}`);
+              break;
+            }
+          }
+          
+          // If still no match, try a more fuzzy approach by checking if any key contains the feature
+          if (!aiRating) {
+            const featureKeys = Object.keys(featureRatings);
+            for (const key of featureKeys) {
+              const normalizedKey = normalizeFeatureName(key);
+              if (normalizedKey.includes(normalizedFeature) || normalizedFeature.includes(normalizedKey)) {
+                aiRating = featureRatings[key];
+                console.log(`Found fuzzy match for "${feature}" using key "${key}" in ${product.name}`);
+                break;
+              }
+            }
+          }
           
           // Fallback data for development/testing
           const mockFeatureData: Record<string, Record<string, { rating: number; description: string }>> = {
@@ -94,7 +137,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
             }
           };
           
-          // Use either AI-generated rating or mock data (for testing/development)
+          // Use either AI-generated rating if available, otherwise fall back to mock data
           const mockProductData = mockFeatureData[feature]?.[product.name];
           
           // Use AI-generated rating if available, otherwise fall back to mock data
@@ -105,6 +148,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
           
           // If no data is available at all
           if (!featureData) {
+            console.log(`No feature data available for "${feature}" in ${product.name}`);
             return (
               <div key={product.id} className="p-6">
                 <div className="font-medium mb-2">{truncateText(product.name, 20)}</div>
@@ -113,7 +157,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
             );
           }
           
-          console.log(`Feature ${feature} for ${product.name}:`, { aiRating, featureData });
+          console.log(`Feature "${feature}" for ${product.name}:`, { aiRating, featureData });
           
           return (
             <div key={product.id} className="p-6">
