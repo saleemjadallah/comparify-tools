@@ -107,7 +107,7 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
           if (!featureData) {
             return (
               <div key={product.id} className="p-6">
-                <div className="font-medium mb-2">{product.name}</div>
+                <div className="font-medium mb-2">{truncateText(product.name, 20)}</div>
                 <div className="text-muted-foreground text-sm">No data available</div>
               </div>
             );
