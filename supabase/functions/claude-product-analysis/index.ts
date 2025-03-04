@@ -37,13 +37,45 @@ serve(async (req) => {
       throw new Error('At least one feature is required for analysis');
     }
 
-    // Prepare product information for Claude
+    // Log incoming data structure
+    console.log('First product raw data structure:', JSON.stringify(products[0].rawData || {}, null, 2).substring(0, 1000) + '...');
+    
+    // Extract and log focused Rainforest API parameters for the first product
+    const firstProduct = products[0];
+    console.log('First product description available:', !!firstProduct.description);
+    console.log('First product feature_bullets_flat available:', !!(firstProduct.rawData?.feature_bullets_flat));
+    console.log('First product specifications_flat available:', !!(firstProduct.rawData?.specifications_flat));
+
+    // Prepare product information for Claude, focusing on the three key parameters
     const productInfo = products.map((product: any) => {
-      const { name, brand, price, specs } = product;
-      let specsText = 'No specifications available';
+      const { name, brand, price } = product;
       
-      if (specs && typeof specs === 'object') {
-        specsText = Object.entries(specs)
+      // Get description from the right place
+      let description = 'No description available';
+      if (product.description && typeof product.description === 'string') {
+        description = product.description;
+      } else if (product.rawData?.description && typeof product.rawData.description === 'string') {
+        description = product.rawData.description;
+      }
+      
+      // Get feature bullets from the right place
+      let features = 'No features available';
+      if (product.rawData?.feature_bullets_flat && Array.isArray(product.rawData.feature_bullets_flat)) {
+        features = product.rawData.feature_bullets_flat.join('\n  ');
+      } else if (product.features && Array.isArray(product.features)) {
+        features = product.features.join('\n  ');
+      } else if (product.rich_product_description && Array.isArray(product.rich_product_description)) {
+        features = product.rich_product_description.join('\n  ');
+      }
+      
+      // Get specifications from the right place
+      let specs = 'No specifications available';
+      if (product.rawData?.specifications_flat && typeof product.rawData.specifications_flat === 'object') {
+        specs = Object.entries(product.rawData.specifications_flat)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n  ');
+      } else if (product.specs && typeof product.specs === 'object') {
+        specs = Object.entries(product.specs)
           .map(([key, value]) => `${key}: ${value}`)
           .join('\n  ');
       }
@@ -51,9 +83,15 @@ serve(async (req) => {
       return `Product: ${name}
 Brand: ${brand || 'Unknown'}
 Price: $${price || 'Unknown'}
+Description:
+${description}
+
+Key Features:
+  ${features}
+
 Specifications:
-  ${specsText}`;
-    }).join('\n\n');
+  ${specs}`;
+    }).join('\n\n' + '-'.repeat(80) + '\n\n');
 
     // Construct the prompt for Claude
     const prompt = `I need you to analyze these ${category} products based on the features that are important to the user.
@@ -107,6 +145,7 @@ Format your response as JSON with the following structure:
 }`;
 
     console.log('Sending request to Claude API...');
+    console.log('Prompt excerpt (first 500 chars):', prompt.substring(0, 500) + '...');
 
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -151,6 +190,8 @@ Format your response as JSON with the following structure:
       try {
         analysisResults = JSON.parse(jsonMatch[0]);
         console.log('Successfully parsed JSON from Claude response');
+        console.log('Analysis results structure:', Object.keys(analysisResults));
+        console.log('Products analyzed:', analysisResults.products.map((p: any) => p.name).join(', '));
       } catch (e) {
         console.error('Error parsing JSON from Claude response:', e);
         throw new Error('Failed to parse Claude response as JSON');

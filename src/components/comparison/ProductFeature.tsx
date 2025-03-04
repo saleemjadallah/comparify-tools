@@ -14,7 +14,7 @@ const truncateText = (text: string, maxLength: number = 15) => {
 
 // Helper function to normalize feature names for comparison
 const normalizeFeatureName = (name: string): string => {
-  return name.toLowerCase().replace(/\s+/g, '').trim();
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
 };
 
 const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
@@ -26,27 +26,35 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x">
         {products.map((product) => {
-          // Check if we have AI-generated feature ratings from specs.featureRatings
-          const featureRatings = product.specs?.featureRatings || {};
+          // Extract the feature ratings from the right location
+          // It could be in product.specs.featureRatings or directly in product.featureRatings
+          let featureRatings = {};
+          
+          if (product.specs && product.specs.featureRatings) {
+            featureRatings = product.specs.featureRatings;
+            console.log(`Found featureRatings in product.specs.featureRatings for ${product.name}`);
+          } else if (product.featureRatings) {
+            featureRatings = product.featureRatings;
+            console.log(`Found featureRatings directly in product.featureRatings for ${product.name}`);
+          }
           
           // Normalize current feature name
           const normalizedFeature = normalizeFeatureName(feature);
           
-          // Try to get the rating for this specific feature with improved matching
-          let aiRating = null;
-          
           // Log the available feature ratings for debugging
-          if (Object.keys(featureRatings).length > 0) {
-            console.log(`Available feature ratings for ${product.name}:`, Object.keys(featureRatings));
-          } else {
-            console.log(`No feature ratings found for ${product.name}`);
-          }
+          console.log(`Feature ratings for ${product.name}:`, 
+            Object.keys(featureRatings).length > 0 
+              ? Object.keys(featureRatings).join(', ') 
+              : 'None available');
           
           // Try different formats of the feature name to find a match
+          let aiRating = null;
+          
+          // Multiple attempts to match the feature name
           const possibleFeatureKeys = [
             feature,                                    // Exact match
             feature.toLowerCase(),                      // Lowercase
-            normalizedFeature,                          // Normalized (lowercase, no spaces)
+            normalizedFeature,                          // Normalized (alphanumeric only)
             feature.replace(/\s+/g, ''),                // No spaces
             feature.replace(/[^a-zA-Z0-9]/g, '')        // Alphanumeric only
           ];
@@ -68,6 +76,19 @@ const ProductFeature = ({ feature, products }: ProductFeatureProps) => {
               if (normalizedKey.includes(normalizedFeature) || normalizedFeature.includes(normalizedKey)) {
                 aiRating = featureRatings[key];
                 console.log(`Found fuzzy match for "${feature}" using key "${key}" in ${product.name}`);
+                break;
+              }
+            }
+          }
+          
+          // Last resort: look for any partial string match
+          if (!aiRating) {
+            const featureKeys = Object.keys(featureRatings);
+            for (const key of featureKeys) {
+              if (key.toLowerCase().includes(feature.toLowerCase()) || 
+                  feature.toLowerCase().includes(key.toLowerCase())) {
+                aiRating = featureRatings[key];
+                console.log(`Found partial string match for "${feature}" using key "${key}" in ${product.name}`);
                 break;
               }
             }

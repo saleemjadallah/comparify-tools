@@ -27,20 +27,55 @@ export const analyzeProducts = async (
     console.log('Important features:', features.join(', '));
     console.log('Category:', category);
 
-    // Prepare product data to send to Claude
-    const productData = products.map(product => ({
-      name: product.name,
-      brand: product.brand || 'Unknown',
-      price: product.price || 'Unknown',
-      specs: product.specs || product.details?.specs || {},
-      description: product.description || '',
-      rich_product_description: product.rich_product_description || [],
-      // Include complete raw data for Claude to have maximum context
-      rawData: product
-    }));
+    // Prepare product data to send to Claude, ensuring we include the key Rainforest API fields
+    const productData = products.map(product => {
+      // Create a base product object with essential fields
+      const productInfo = {
+        name: product.name,
+        brand: product.brand || 'Unknown',
+        price: product.price || 'Unknown',
+        specs: product.specs || product.details?.specs || {},
+        id: product.id || crypto.randomUUID(),
+        
+        // These are the three key fields from Rainforest API we want to focus on
+        description: product.description || '',
+        features: product.features || [],
+        rich_product_description: product.rich_product_description || [],
+        
+        // Include raw data for access to all available fields
+        rawData: {
+          ...product,
+          // Explicitly map the three key Rainforest API fields we want to focus on
+          description: product.description || '',
+          feature_bullets_flat: product.features || product.rich_product_description || [],
+          specifications_flat: product.specs || {}
+        }
+      };
+      
+      console.log(`Prepared data for ${product.name} analysis with ${Object.keys(productInfo.specs).length} specs`);
+      
+      if (product.description) {
+        console.log(`Description excerpt: ${product.description.substring(0, 100)}...`);
+      }
+      
+      if (product.features && product.features.length > 0) {
+        console.log(`Features available: ${product.features.length}`);
+      } else if (product.rich_product_description && product.rich_product_description.length > 0) {
+        console.log(`Rich description paragraphs available: ${product.rich_product_description.length}`);
+      }
+      
+      return productInfo;
+    });
 
-    // Detailed logging of product data we're sending to Claude
-    console.log('Product data for analysis:', JSON.stringify(productData, null, 2));
+    // Log the data we're sending to Claude for the first product
+    if (productData.length > 0) {
+      console.log('First product data sample:', JSON.stringify({
+        name: productData[0].name,
+        description_length: productData[0].description ? productData[0].description.length : 0,
+        features_count: productData[0].features ? productData[0].features.length : 0,
+        specs_count: productData[0].specs ? Object.keys(productData[0].specs).length : 0
+      }));
+    }
 
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('claude-product-analysis', {
