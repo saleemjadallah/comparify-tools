@@ -5,8 +5,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getComparison } from "@/services/productService";
+import { BatchComparisonAnalysis } from "@/services/analysis/comparisonAnalysisTypes";
+import { generateAndSaveBatchAnalysis, getBatchAnalysis } from "@/services/analysis/generateBatchAnalysis";
 
-// Import our new components
+// Import our components
 import ComparisonHeader from "@/components/comparison/ComparisonHeader";
 import ComparisonSkeleton from "@/components/comparison/ComparisonSkeleton";
 import ComparisonNotFound from "@/components/comparison/ComparisonNotFound";
@@ -14,12 +16,15 @@ import AnalysisStatusAlert from "@/components/comparison/AnalysisStatusAlert";
 import ProductOverviewSection from "@/components/comparison/ProductOverviewSection";
 import KeyFeaturesSection from "@/components/comparison/KeyFeaturesSection";
 import SpecificationsSection from "@/components/comparison/SpecificationsSection";
+import BatchComparisonAnalysis from "@/components/comparison/BatchComparisonAnalysis";
 
 const ComparisonPage = () => {
   const { comparisonId } = useParams();
   const { toast } = useToast();
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [batchAnalysis, setBatchAnalysis] = useState<BatchComparisonAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const fetchComparisonData = async () => {
     if (!comparisonId) {
@@ -32,6 +37,9 @@ const ComparisonPage = () => {
       if (data) {
         console.log('Loaded comparison data:', data);
         setComparisonData(data);
+        
+        // Try to fetch existing batch analysis
+        fetchBatchAnalysis(comparisonId, data);
       } else {
         toast({
           title: "Error",
@@ -48,6 +56,81 @@ const ComparisonPage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBatchAnalysis = async (comparisonId: string, comparisonData: any) => {
+    try {
+      // First try to get existing analysis
+      const existingAnalysis = await getBatchAnalysis(comparisonId);
+      
+      if (existingAnalysis) {
+        console.log('Loaded existing batch analysis');
+        setBatchAnalysis(existingAnalysis);
+      } else {
+        // Generate new analysis if none exists
+        console.log('No existing batch analysis found, generating new one');
+        setAnalysisLoading(true);
+        
+        const newAnalysis = await generateAndSaveBatchAnalysis(
+          comparisonData.products,
+          comparisonData.category,
+          comparisonId
+        );
+        
+        if (newAnalysis) {
+          setBatchAnalysis(newAnalysis);
+          toast({
+            title: "Analysis Complete",
+            description: "Batch comparison analysis has been generated.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error with batch analysis:", error);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const handleGenerateAnalysis = async () => {
+    if (!comparisonData || !comparisonId) return;
+    
+    setAnalysisLoading(true);
+    toast({
+      title: "Generating Analysis",
+      description: "This may take a moment...",
+    });
+    
+    try {
+      const newAnalysis = await generateAndSaveBatchAnalysis(
+        comparisonData.products,
+        comparisonData.category,
+        comparisonId
+      );
+      
+      if (newAnalysis) {
+        setBatchAnalysis(newAnalysis);
+        toast({
+          title: "Analysis Complete",
+          description: "Batch comparison analysis has been regenerated.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate analysis.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating analysis:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate analysis.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalysisLoading(false);
     }
   };
 
@@ -68,10 +151,6 @@ const ComparisonPage = () => {
   const hasAnyAnalysisData = () => {
     if (!comparisonData || !comparisonData.products) return false;
     return comparisonData.products.some(hasAnalysisData);
-  };
-
-  const handleRetryAnalysis = () => {
-    window.location.reload();
   };
 
   if (loading) {
@@ -101,20 +180,38 @@ const ComparisonPage = () => {
         </div>
 
         {/* Analysis Status */}
-        {!hasAnyAnalysisData() && (
-          <AnalysisStatusAlert onRetry={handleRetryAnalysis} />
+        {!hasAnyAnalysisData() && !batchAnalysis && (
+          <AnalysisStatusAlert onRetry={handleGenerateAnalysis} />
         )}
 
-        {/* Product Overview Section */}
+        {/* Batch Comparison Analysis (new) */}
+        {batchAnalysis && (
+          <div className="mb-12">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Comprehensive Analysis</h2>
+              <Button 
+                variant="outline" 
+                onClick={handleGenerateAnalysis}
+                disabled={analysisLoading}
+              >
+                {analysisLoading ? "Generating..." : "Regenerate Analysis"}
+              </Button>
+            </div>
+            <BatchComparisonAnalysis 
+              analysis={batchAnalysis} 
+              products={comparisonData.products} 
+            />
+          </div>
+        )}
+
+        {/* Original Sections (kept for backward compatibility) */}
         <ProductOverviewSection products={comparisonData.products} />
 
-        {/* Key Features Section */}
         <KeyFeaturesSection 
           featureImportance={comparisonData.featureImportance}
           products={comparisonData.products}
         />
 
-        {/* Specifications Table */}
         <SpecificationsSection products={comparisonData.products} />
       </div>
     </div>

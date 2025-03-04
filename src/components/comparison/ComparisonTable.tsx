@@ -2,9 +2,10 @@
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProductSearchResult } from "@/services/types";
 
 interface ComparisonTableProps {
-  products: any[];
+  products: ProductSearchResult[];
 }
 
 const ComparisonTable = ({ products }: ComparisonTableProps) => {
@@ -17,7 +18,19 @@ const ComparisonTable = ({ products }: ComparisonTableProps) => {
   const allSpecCategories = new Set<string>();
   
   products.forEach(product => {
-    if (product.specs) {
+    // First try to use enhancedSpecs if available
+    if (product.enhancedSpecs) {
+      Object.keys(product.enhancedSpecs).forEach(category => {
+        allSpecCategories.add(category);
+        
+        // Add each spec with category prefix
+        Object.keys(product.enhancedSpecs[category]).forEach(spec => {
+          allSpecKeys.add(`${category}: ${spec}`);
+        });
+      });
+    }
+    // Fall back to regular specs
+    else if (product.specs) {
       Object.keys(product.specs).forEach(key => {
         // Skip the featureRatings object since we display it separately
         if (key !== 'featureRatings') {
@@ -89,15 +102,27 @@ const ComparisonTable = ({ products }: ComparisonTableProps) => {
                       <td className="py-4 px-6 font-medium">
                         {displayKey}
                       </td>
-                      {products.map((product) => (
-                        <td key={product.id} className="py-4 px-6">
-                          {product.specs && product.specs[key] !== undefined 
-                            ? (typeof product.specs[key] === 'object' 
-                                ? JSON.stringify(product.specs[key]) 
-                                : product.specs[key])
-                            : "—"}
-                        </td>
-                      ))}
+                      {products.map((product) => {
+                        // Check if using enhancedSpecs or regular specs
+                        let specValue = "—";
+                        
+                        if (product.enhancedSpecs && key.includes(': ')) {
+                          const [category, spec] = key.split(': ');
+                          if (product.enhancedSpecs[category] && product.enhancedSpecs[category][spec] !== undefined) {
+                            specValue = product.enhancedSpecs[category][spec];
+                          }
+                        } else if (product.specs && product.specs[key] !== undefined) {
+                          specValue = typeof product.specs[key] === 'object' 
+                                      ? JSON.stringify(product.specs[key]) 
+                                      : product.specs[key];
+                        }
+                        
+                        return (
+                          <td key={product.id} className="py-4 px-6">
+                            {specValue}
+                          </td>
+                        );
+                      })}
                     </tr>
                   );
                 })}
