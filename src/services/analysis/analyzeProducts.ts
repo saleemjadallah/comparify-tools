@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { AnalysisResponse } from "./types";
@@ -245,7 +244,7 @@ export const analyzeProducts = async (
         toast({
           title: "Partial Analysis",
           description: `Some product features couldn't be analyzed. The comparison may have limited insights.`,
-          variant: "warning",
+          variant: "destructive",
         });
       }
     }
