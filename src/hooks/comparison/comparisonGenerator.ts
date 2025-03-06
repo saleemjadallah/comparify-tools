@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ComparisonState, Product } from "./types";
 import { saveProduct, saveComparison } from "@/services/productService";
-import { analyzeProducts, updateComparisonWithAnalysis } from "@/services/analysis";
+import { directAnalyzeProducts, updateComparisonWithAnalysis } from "@/services/claudeAnalysisService";
 import { useValidation } from "./validationUtils";
 
 export const useComparisonGenerator = (state: ComparisonState) => {
@@ -53,10 +53,11 @@ export const useComparisonGenerator = (state: ComparisonState) => {
         throw new Error("Failed to create comparison");
       }
 
-      // Run Claude AI analysis on the products
+      // Run Claude AI analysis on the products - USING THE SIMPLIFIED DIRECT APPROACH
       toast({
         title: "Analyzing products",
-        description: "Using AI to analyze your selected products...",
+        description: "This may take a few minutes as our AI performs a detailed analysis based on your preferences...",
+        duration: 15000, // Show for 15 seconds
       });
 
       const productDetails = state.products
@@ -64,7 +65,8 @@ export const useComparisonGenerator = (state: ComparisonState) => {
         .map(p => p.details);
 
       if (productDetails.length >= 2) {
-        const analysisResults = await analyzeProducts(
+        // Using the direct analysis approach
+        const analysisResults = await directAnalyzeProducts(
           productDetails,
           state.featureImportance,
           state.category
@@ -77,6 +79,12 @@ export const useComparisonGenerator = (state: ComparisonState) => {
           toast({
             title: "Analysis complete",
             description: "Product analysis has been added to your comparison.",
+          });
+        } else {
+          toast({
+            title: "Analysis incomplete",
+            description: "Analysis could not be completed, but your comparison has been saved.",
+            variant: "warning",
           });
         }
       }

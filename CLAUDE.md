@@ -3,8 +3,8 @@
 ## Project Commands
 - Build: `npm run build`
 - Dev server: `npm run dev`
-- Lint: `npm run lint`
-- Typecheck: `npm run typecheck`
+- Lint: `npm run lint` (may require installing ESLint first)
+- Preview: `npm run preview`
 
 ## Project Structure
 - `/src`: Main source code

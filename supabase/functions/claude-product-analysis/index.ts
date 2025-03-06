@@ -6,6 +6,9 @@ import { callClaudeAnalysis } from "./claudeService.ts";
 import { generateMockData } from "./mockData.ts";
 import { corsHeaders } from "./utils.ts";
 
+// Set longer timeout for the edge function to allow Claude time to analyze
+const FUNCTION_TIMEOUT = 300000; // 5 minutes in milliseconds
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
