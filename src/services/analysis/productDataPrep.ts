@@ -1,5 +1,5 @@
-
 import { logger } from "./logging";
+import { enhancedSpecProcessing } from "@/utils/enhancedSpecs";
 
 /**
  * Prepares product data for analysis, ensuring required fields are present

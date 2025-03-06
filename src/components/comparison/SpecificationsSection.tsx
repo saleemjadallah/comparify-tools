@@ -1,9 +1,8 @@
-
 import React from "react";
 import ComparisonTable from "@/components/comparison/ComparisonTable";
 import SectionContainer from "@/components/comparison/SectionContainer";
 import { ProductSearchResult } from "@/services/types";
-import { enhancedSpecProcessing } from "@/utils/enhancedSpecProcessing";
+import { enhancedSpecProcessing } from "@/utils/enhancedSpecs";
 
 interface SpecificationsSectionProps {
   products: ProductSearchResult[];

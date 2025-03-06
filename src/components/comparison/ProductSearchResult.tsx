@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import ComparisonRating from "./ComparisonRating";
 import { ProductSearchResult as SearchResultType } from "@/services/productService";
-import { getTopSpecs } from "@/utils/enhancedSpecProcessing";
+import { getTopSpecs } from "@/utils/enhancedSpecs";
 
 interface ProductSearchResultProps {
   product: SearchResultType;

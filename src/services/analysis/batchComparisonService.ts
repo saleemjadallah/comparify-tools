@@ -1,4 +1,3 @@
-
 import { 
   BatchComparisonAnalysis,
   ComparativeOverviewItem,
@@ -11,7 +10,7 @@ import {
   PersonalizedRecommendation
 } from './comparisonAnalysisTypes';
 import { ProductSearchResult, Product } from '../types';
-import { enhancedSpecProcessing, flattenEnhancedSpecs } from '@/utils/enhancedSpecProcessing';
+import { enhancedSpecProcessing, flattenEnhancedSpecs } from '@/utils/enhancedSpecs';
 
 /**
  * Generates a comprehensive batch comparison analysis for the given products

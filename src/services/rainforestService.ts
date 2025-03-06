@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ProductSearchResult } from "./types";
-import { enhancedSpecProcessing, flattenEnhancedSpecs } from "@/utils/enhancedSpecProcessing";
+import { enhancedSpecProcessing, flattenEnhancedSpecs } from "@/utils/enhancedSpecs";
 
 // Function to search products using the Rainforest API (via our Edge Function)
 export const searchProductsFromRainforest = async (
