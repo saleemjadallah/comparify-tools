@@ -10,12 +10,15 @@ import ComparisonNotFound from "@/components/comparison/ComparisonNotFound";
 import ProductOverviewSection from "@/components/comparison/ProductOverviewSection";
 import KeyFeaturesSection from "@/components/comparison/KeyFeaturesSection";
 import SpecificationsSection from "@/components/comparison/SpecificationsSection";
+import AnalysisSection from "@/components/comparison/AnalysisSection";
 
 const ComparisonPage = () => {
   const { comparisonId } = useParams();
   const {
     comparisonData,
-    loading
+    loading,
+    analysisLoading,
+    analysisResults
   } = useComparisonData(comparisonId);
 
   if (loading) {
@@ -43,6 +46,12 @@ const ComparisonPage = () => {
             comparisonId={comparisonId || ""}
           />
         </div>
+
+        {/* AI Analysis Section */}
+        <AnalysisSection 
+          analysisResults={analysisResults}
+          isLoading={analysisLoading}
+        />
 
         {/* Original Sections */}
         <ProductOverviewSection products={comparisonData.products} />

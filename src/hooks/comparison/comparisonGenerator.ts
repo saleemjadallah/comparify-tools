@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ComparisonState, Product } from "./types";
 import { saveProduct, saveComparison } from "@/services/productService";
+import { analyzeProductsWithClaude, updateComparisonWithProductAnalysis } from "@/services/claudeProductAnalysisService";
 import { useValidation } from "./validationUtils";
 
 export const useComparisonGenerator = (state: ComparisonState) => {
@@ -51,10 +52,55 @@ export const useComparisonGenerator = (state: ComparisonState) => {
         throw new Error("Failed to create comparison");
       }
 
+      // Show initial toast
       toast({
         title: "Comparison created",
-        description: "Your product comparison has been created successfully.",
+        description: "Now analyzing products based on your preferences...",
+        duration: 5000,
       });
+
+      // Get product details for analysis
+      const productDetails = state.products
+        .filter(p => p.details)
+        .map(p => p.details);
+
+      // Start a background process to analyze the products
+      if (productDetails.length >= 2) {
+        try {
+          // Show detailed toast for longer analysis
+          toast({
+            title: "AI analysis in progress",
+            description: "Our AI is performing a comprehensive analysis of your selected products. This may take a few minutes...",
+            duration: 10000,
+          });
+
+          // Analyze products with Claude
+          const analysisResults = await analyzeProductsWithClaude(
+            productDetails,
+            state.featureImportance,
+            state.category
+          );
+
+          if (analysisResults) {
+            // Update the comparison with analysis results
+            await updateComparisonWithProductAnalysis(comparisonId, analysisResults);
+
+            toast({
+              title: "Analysis complete",
+              description: "Your product comparison has been enriched with AI-powered insights.",
+              duration: 5000,
+            });
+          }
+        } catch (analysisError) {
+          console.error("Error during product analysis:", analysisError);
+          toast({
+            title: "Analysis incomplete",
+            description: "We couldn't complete the full analysis, but you can still view the basic comparison.",
+            variant: "warning",
+            duration: 5000,
+          });
+        }
+      }
       
       // Navigate to comparison page
       navigate(`/compare/${comparisonId}`);
