@@ -21,13 +21,17 @@ export const prepareProductData = (products: any[]): any[] => {
       features: product.features || [],
       rich_product_description: product.rich_product_description || [],
       
+      // Include enhanced specs if available
+      enhancedSpecs: product.enhancedSpecs || {},
+      
       // Include raw data for access to all available fields
       rawData: {
         ...product,
         // Explicitly map the three key Rainforest API fields we want to focus on
         description: product.description || '',
         feature_bullets_flat: product.features || product.rich_product_description || [],
-        specifications_flat: product.specs || {}
+        specifications_flat: product.specs || {},
+        specifications: product.specifications || []
       }
     };
     
@@ -44,12 +48,14 @@ const logProductData = (product: any, productInfo: any): void => {
   const hasDescription = !!productInfo.description;
   const specCount = Object.keys(productInfo.specs).length;
   const featureCount = productInfo.features.length;
+  const richDescriptionCount = productInfo.rich_product_description.length;
   
   logger.debug(`Prepared data for "${product.name}"`, {
     brand: productInfo.brand,
     specCount,
     hasDescription,
     featureCount,
+    richDescriptionCount,
     descriptionExcerpt: hasDescription ? productInfo.description.substring(0, 100) + '...' : 'N/A'
   });
   
