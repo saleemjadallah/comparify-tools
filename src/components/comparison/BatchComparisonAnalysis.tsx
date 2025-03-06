@@ -20,6 +20,22 @@ const truncateText = (text: string, maxLength: number = 15) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
+// Helper function to format recommendation reasoning
+const formatRecommendation = (reasoning: string, productName: string): string => {
+  // Replace direct mentions of the product with "This option"
+  const genericReasoning = reasoning
+    .replace(new RegExp(productName, 'gi'), "This option")
+    .replace(/This product/gi, "This option")
+    .replace(/The product/gi, "This option");
+  
+  // Add a summarizing first sentence if it doesn't already have one
+  if (!genericReasoning.match(/^(This option|It) (is|offers|provides|delivers|features)/i)) {
+    return `This option stands out because ${genericReasoning.charAt(0).toLowerCase() + genericReasoning.slice(1)}`;
+  }
+  
+  return genericReasoning;
+};
+
 const BatchComparisonAnalysis = ({ 
   analysis, 
   products 
@@ -106,11 +122,18 @@ const BatchComparisonAnalysis = ({
             const recommendedProduct = products.find(p => p.id === recommendation.productId);
             if (!recommendedProduct) return null;
             
+            const formattedReasoning = formatRecommendation(recommendation.reasoning, recommendedProduct.name);
+            
             return (
               <div key={recommendation.recommendationType} className="bg-white rounded-xl shadow-sm border p-6">
-                <h3 className="text-lg font-semibold mb-2">{recommendation.recommendationType}</h3>
-                <div className="font-medium mb-2">{truncateText(recommendedProduct.name, 20)}</div>
-                <p className="text-muted-foreground">{recommendation.reasoning}</p>
+                <h3 className="text-lg font-semibold mb-2">
+                  {recommendation.recommendationType}
+                </h3>
+                <div className="flex items-center mb-3">
+                  <Badge variant="outline" className="mr-2">Recommended</Badge>
+                  <span className="font-medium">{truncateText(recommendedProduct.name, 20)}</span>
+                </div>
+                <p className="text-muted-foreground">{formattedReasoning}</p>
               </div>
             );
           })}
