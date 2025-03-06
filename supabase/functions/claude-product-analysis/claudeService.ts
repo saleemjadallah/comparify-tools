@@ -27,10 +27,12 @@ Please provide the following for each product:
 
 Additionally, provide personalized recommendations for different user types. For each recommendation:
 1. Identify a specific user persona or use case (e.g., "Budget-conscious professional", "Creative professional", "Gamer", etc.)
-2. Explain in detail (3-5 sentences) why the recommended product is ideal for this persona, going beyond just mentioning "good balance of features, performance, and price"
-3. Highlight the specific standout features that make this product appropriate for this user persona
-4. Explain any trade-offs this persona might be making with this choice
-5. Suggest one key accessory or complementary product that would enhance the experience for this specific user type
+2. Explain in detail (3-5 sentences) why the recommended product is ideal for this persona, with SPECIFIC examples of how features benefit them
+3. NEVER use vague statements like "good balance of features, performance, and price" - instead be SPECIFIC about exactly which features matter for this user and WHY
+4. Include concrete, measurable advantages (e.g., "15% longer battery life", "higher resolution display that shows 25% more detail", etc.)
+5. Mention at least 2-3 specific standout features with quantifiable benefits for this user type
+6. Explain any trade-offs this persona might be making with this choice
+7. Suggest one key accessory or complementary product that would enhance the experience for this specific user type
 
 Format your response as JSON with the following structure:
 {
@@ -97,7 +99,7 @@ export async function callClaudeAnalysis(productInfo: string, features: string[]
           content: prompt
         }
       ],
-      system: "You are a product comparison expert with deep knowledge of consumer electronics and technology. Provide detailed, nuanced analysis based only on the information given, highlighting meaningful differences between products rather than superficial distinctions. Format your entire response as valid JSON with no extra text. Your analysis should be specific and actionable, helping users make informed purchasing decisions based on their unique needs. Avoid vague statements like 'good balance of features, performance, and price' - instead, explain precisely what makes each recommendation appropriate with concrete examples."
+      system: "You are a product comparison expert with deep knowledge of consumer electronics and technology. Provide detailed, nuanced analysis based only on the information given, highlighting meaningful differences between products rather than superficial distinctions. Format your entire response as valid JSON with no extra text. Your analysis should be specific and actionable, helping users make informed purchasing decisions based on their unique needs. NEVER use vague phrases like 'good balance of features, performance, and price' - always be specific about which features matter and why they matter for particular use cases. Quantify advantages where possible (e.g., '25% faster processing', '30% longer battery life'). Focus on concrete differences that impact real-world usage for different types of users."
     }),
   });
 

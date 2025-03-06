@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -22,18 +21,87 @@ const truncateText = (text: string, maxLength: number = 15) => {
 
 // Helper function to format recommendation reasoning
 const formatRecommendation = (reasoning: string, productName: string): string => {
+  if (!reasoning) return "";
+  
   // Replace direct mentions of the product with "This option"
-  const genericReasoning = reasoning
+  let genericReasoning = reasoning
     .replace(new RegExp(productName, 'gi'), "This option")
     .replace(/This product/gi, "This option")
     .replace(/The product/gi, "This option");
   
+  // Extract key points and create a more structured summary
+  const keyPoints = extractKeyPoints(genericReasoning);
+  
+  if (keyPoints.length > 0) {
+    // Join key points with connecting words for better readability
+    return keyPoints.join(" Furthermore, ") + ".";
+  }
+  
+  // Fallback if we couldn't extract key points
   // Add a summarizing first sentence if it doesn't already have one
   if (!genericReasoning.match(/^(This option|It) (is|offers|provides|delivers|features)/i)) {
     return `This option stands out because ${genericReasoning.charAt(0).toLowerCase() + genericReasoning.slice(1)}`;
   }
   
   return genericReasoning;
+};
+
+// Helper to extract key points from recommendation text
+const extractKeyPoints = (text: string): string[] => {
+  // Split by sentence-ending punctuation
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  
+  // Filter out sentences that are too short or don't contain meaningful information
+  const meaningfulSentences = sentences.filter(sentence => 
+    sentence.length > 15 && 
+    !sentence.match(/^(This option|It) is (a|an|the)/i) &&
+    !sentence.match(/^(In|As|With|By|For) /i) &&
+    sentence.match(/\b(feature|offer|provide|deliver|capability|performance|quality|experience|enable|allow|support)\b/i)
+  );
+  
+  // If we have enough meaningful sentences, use them
+  if (meaningfulSentences.length >= 2) {
+    return meaningfulSentences.slice(0, 3).map(s => {
+      // Ensure sentences end with proper punctuation
+      if (!s.match(/[.!?]$/)) s += '.';
+      return s;
+    });
+  }
+  
+  // Otherwise extract phrases with specific advantages
+  const advantagePhrases = [];
+  
+  // Look for phrases containing percentages, numbers, or measurement units
+  const specificAdvantages = text.match(/\b\d+%\s*(better|faster|longer|higher|more|greater|improved)\b[^.!?]+/gi);
+  if (specificAdvantages) {
+    advantagePhrases.push(...specificAdvantages.slice(0, 2));
+  }
+  
+  // Look for comparative advantages
+  const comparativeAdvantages = text.match(/\b(better|faster|longer|higher|more|greater|improved)\b[^.!?]+/gi);
+  if (comparativeAdvantages) {
+    advantagePhrases.push(...comparativeAdvantages.slice(0, 2));
+  }
+  
+  // Look for feature highlights
+  const featureHighlights = text.match(/\b(feature|capability|functionality)\b[^.!?]+/gi);
+  if (featureHighlights) {
+    advantagePhrases.push(...featureHighlights.slice(0, 2));
+  }
+  
+  // Clean up the phrases and return up to 3
+  return [...new Set(advantagePhrases)]
+    .slice(0, 3)
+    .map(phrase => {
+      phrase = phrase.trim();
+      // Ensure it starts with "This option" if it doesn't already have a subject
+      if (!phrase.match(/^(This|It|The)/i)) {
+        phrase = "This option " + phrase;
+      }
+      // Ensure it ends with proper punctuation
+      if (!phrase.match(/[.!?]$/)) phrase += '.';
+      return phrase;
+    });
 };
 
 const BatchComparisonAnalysis = ({ 
