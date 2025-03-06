@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,17 +10,12 @@ import ComparisonNotFound from "@/components/comparison/ComparisonNotFound";
 import ProductOverviewSection from "@/components/comparison/ProductOverviewSection";
 import KeyFeaturesSection from "@/components/comparison/KeyFeaturesSection";
 import SpecificationsSection from "@/components/comparison/SpecificationsSection";
-import AnalysisSection from "@/components/comparison/AnalysisSection";
 
 const ComparisonPage = () => {
   const { comparisonId } = useParams();
   const {
     comparisonData,
-    loading,
-    batchAnalysis,
-    analysisLoading,
-    hasAnyAnalysisData,
-    handleGenerateAnalysis
+    loading
   } = useComparisonData(comparisonId);
 
   if (loading) {
@@ -49,15 +43,6 @@ const ComparisonPage = () => {
             comparisonId={comparisonId || ""}
           />
         </div>
-
-        {/* Analysis Section */}
-        <AnalysisSection
-          batchAnalysis={batchAnalysis}
-          products={comparisonData.products}
-          hasAnyAnalysisData={hasAnyAnalysisData()}
-          isLoading={analysisLoading}
-          onGenerateAnalysis={handleGenerateAnalysis}
-        />
 
         {/* Original Sections */}
         <ProductOverviewSection products={comparisonData.products} />

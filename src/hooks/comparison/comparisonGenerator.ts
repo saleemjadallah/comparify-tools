@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ComparisonState, Product } from "./types";
 import { saveProduct, saveComparison } from "@/services/productService";
-import { directAnalyzeProducts, updateComparisonWithAnalysis } from "@/services/claudeAnalysisService";
 import { useValidation } from "./validationUtils";
 
 export const useComparisonGenerator = (state: ComparisonState) => {
@@ -52,41 +51,10 @@ export const useComparisonGenerator = (state: ComparisonState) => {
         throw new Error("Failed to create comparison");
       }
 
-      // Use Claude AI to analyze the products based on user preferences
       toast({
-        title: "Analyzing products",
-        description: "This may take a few minutes as our AI performs a detailed analysis based on your preferences...",
-        duration: 15000, // Show for 15 seconds
+        title: "Comparison created",
+        description: "Your product comparison has been created successfully.",
       });
-
-      const productDetails = state.products
-        .filter(p => p.details)
-        .map(p => p.details);
-
-      if (productDetails.length >= 2) {
-        // Direct analysis with Claude
-        const analysisResults = await directAnalyzeProducts(
-          productDetails,
-          state.featureImportance,
-          state.category
-        );
-
-        if (analysisResults) {
-          // Update the comparison with AI analysis
-          await updateComparisonWithAnalysis(comparisonId, analysisResults);
-
-          toast({
-            title: "Analysis complete",
-            description: "Product analysis has been added to your comparison.",
-          });
-        } else {
-          toast({
-            title: "Analysis incomplete",
-            description: "Analysis could not be completed, but your comparison has been saved.",
-            variant: "warning",
-          });
-        }
-      }
       
       // Navigate to comparison page
       navigate(`/compare/${comparisonId}`);
