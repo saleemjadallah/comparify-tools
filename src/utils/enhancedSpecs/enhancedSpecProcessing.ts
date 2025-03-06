@@ -8,7 +8,14 @@ import {
 } from './categorySpecificProcessing';
 import { processSpecification } from './specificationProcessor';
 import { categoryMappings } from './categoryMappings';
-import { logger } from '@/services/analysis/logging';
+
+// Simple logger replacement
+const logger = {
+  debug: (message: string) => console.debug(message),
+  info: (message: string) => console.info(message),
+  warn: (message: string) => console.warn(message),
+  error: (message: string) => console.error(message)
+};
 
 /**
  * Enhanced specification processing system
