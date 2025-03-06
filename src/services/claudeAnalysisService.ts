@@ -1,9 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Simple Claude Analysis Service that directly sends product data to Claude
- * with minimal processing, based on user preferences
+ * Direct Claude Analysis Service that sends product data to Claude
+ * for analysis based on user preferences
  */
 
 export interface FeatureRating {
@@ -20,25 +19,28 @@ export interface ProductAnalysis {
   featureRatings: Record<string, FeatureRating>;
 }
 
+export interface PersonalizedRecommendation {
+  productId: string;
+  recommendationType: string;
+  reasoning: string;
+  standoutFeatures: string[];
+  relevantTradeoffs: string;
+}
+
+export interface DataCompleteness {
+  overallCompleteness: string;
+  missingKeyData: string[];
+  inferredData?: string[];
+}
+
 export interface AnalysisResponse {
   products: ProductAnalysis[];
-  personalizedRecommendations: {
-    productId: string;
-    recommendationType: string;
-    reasoning: string;
-    standoutFeatures: string[];
-    relevantTradeoffs: string;
-  }[];
-  dataCompleteness?: {
-    overallCompleteness: string;
-    missingKeyData: string[];
-    inferredData?: string[];
-  };
+  personalizedRecommendations: PersonalizedRecommendation[];
+  dataCompleteness?: DataCompleteness;
 }
 
 /**
  * Direct analysis of products using Claude AI based on user-selected features
- * Simplified approach that sends the raw data directly to Claude
  */
 export const directAnalyzeProducts = async (
   products: any[],
@@ -46,7 +48,7 @@ export const directAnalyzeProducts = async (
   category: string
 ): Promise<AnalysisResponse | null> => {
   try {
-    console.log(`Starting direct Claude analysis for ${products.length} products in ${category} category`);
+    console.log(`Starting Claude analysis for ${products.length} products in ${category} category`);
     console.log(`User-selected important features: ${features.join(', ')}`);
     
     // Validation
@@ -84,7 +86,7 @@ export const directAnalyzeProducts = async (
 
     console.log('Received Claude analysis response');
     
-    // Provide some basic validation to ensure the response has the expected structure
+    // Validate to ensure the response has the expected structure
     if (!data.products || !Array.isArray(data.products)) {
       console.error('Invalid response format: missing products array');
       return null;

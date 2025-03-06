@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +52,7 @@ export const useComparisonGenerator = (state: ComparisonState) => {
         throw new Error("Failed to create comparison");
       }
 
-      // Run Claude AI analysis on the products - USING THE SIMPLIFIED DIRECT APPROACH
+      // Use Claude AI to analyze the products based on user preferences
       toast({
         title: "Analyzing products",
         description: "This may take a few minutes as our AI performs a detailed analysis based on your preferences...",
@@ -65,7 +64,7 @@ export const useComparisonGenerator = (state: ComparisonState) => {
         .map(p => p.details);
 
       if (productDetails.length >= 2) {
-        // Using the direct analysis approach
+        // Direct analysis with Claude
         const analysisResults = await directAnalyzeProducts(
           productDetails,
           state.featureImportance,
